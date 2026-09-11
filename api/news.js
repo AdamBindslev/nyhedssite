@@ -1,7 +1,13 @@
 // Vercel Serverless Function: api/news.js
-// Aggregerer og cacher RSS feeds fra DR Politik, DR Østjylland og BBC World
+// Aggregerer og cacher RSS feeds fra DR Seneste, DR Politik, DR Østjylland, Politiken, BBC World og The Guardian
 
 const FEEDS = [
+  {
+    id: 'dr-seneste',
+    source: 'DR Seneste',
+    category: 'Breaking',
+    url: 'https://www.dr.dk/nyheder/service/feeds/senestenyt'
+  },
   {
     id: 'dr-politik',
     source: 'DR Politik',
@@ -15,10 +21,22 @@ const FEEDS = [
     url: 'https://www.dr.dk/nyheder/service/feeds/regionale/oestjylland'
   },
   {
+    id: 'politiken',
+    source: 'Politiken',
+    category: 'Nationalt',
+    url: 'https://politiken.dk/rss/senestenyt.rss'
+  },
+  {
     id: 'bbc-world',
     source: 'BBC World',
     category: 'Udland',
     url: 'https://feeds.bbci.co.uk/news/world/rss.xml'
+  },
+  {
+    id: 'the-guardian',
+    source: 'The Guardian',
+    category: 'Global',
+    url: 'https://www.theguardian.com/world/rss'
   }
 ];
 
@@ -27,11 +45,22 @@ function cleanText(raw) {
   return raw
     .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
     .replace(/<[^>]+>/g, '')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&aelig;/gi, 'æ')
+    .replace(/&oslash;/gi, 'ø')
+    .replace(/&aring;/gi, 'å')
+    .replace(/&AElig;/g, 'Æ')
+    .replace(/&Oslash;/g, 'Ø')
+    .replace(/&Aring;/g, 'Å')
+    .replace(/&eacute;/gi, 'é')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -86,6 +115,58 @@ function parseRssXml(xmlString, feedMeta) {
   return items;
 }
 
+/**
+ * Fair Interleaving: Fletter artikler på tværs af kilder så ingen enkelt kilde
+ * (som BBC med mange artikler) dominerer spotlight-rotationen.
+ * Skifter harmonisk mellem danske nyheder og internationale tophistorier.
+ */
+function createBalancedCuratedList(byFeed, maxItems = 36) {
+  const danishFeedIds = ['dr-seneste', 'dr-politik', 'dr-ostjylland', 'politiken'];
+  const globalFeedIds = ['bbc-world', 'the-guardian'];
+
+  const danishItems = [];
+  const globalItems = [];
+
+  // Round-robin blandt danske feeds
+  const maxDkLen = Math.max(...danishFeedIds.map(id => (byFeed[id] || []).length), 0);
+  for (let i = 0; i < maxDkLen; i++) {
+    for (const id of danishFeedIds) {
+      if (byFeed[id] && byFeed[id][i]) {
+        danishItems.push(byFeed[id][i]);
+      }
+    }
+  }
+
+  // Round-robin blandt globale feeds
+  const maxGlobalLen = Math.max(...globalFeedIds.map(id => (byFeed[id] || []).length), 0);
+  for (let i = 0; i < maxGlobalLen; i++) {
+    for (const id of globalFeedIds) {
+      if (byFeed[id] && byFeed[id][i]) {
+        globalItems.push(byFeed[id][i]);
+      }
+    }
+  }
+
+  // Flet 2 danske med 1 international (harmonisk balance)
+  const interleaved = [];
+  let dkIdx = 0;
+  let globalIdx = 0;
+
+  while ((dkIdx < danishItems.length || globalIdx < globalItems.length) && interleaved.length < maxItems) {
+    if (dkIdx < danishItems.length) {
+      interleaved.push(danishItems[dkIdx++]);
+    }
+    if (dkIdx < danishItems.length && interleaved.length < maxItems) {
+      interleaved.push(danishItems[dkIdx++]);
+    }
+    if (globalIdx < globalItems.length && interleaved.length < maxItems) {
+      interleaved.push(globalItems[globalIdx++]);
+    }
+  }
+
+  return interleaved;
+}
+
 export default async function handler(req, res) {
   // CORS & Cache Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -101,12 +182,12 @@ export default async function handler(req, res) {
     const feedPromises = FEEDS.map(async (feed) => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
 
         const response = await fetch(feed.url, {
           signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; CelestialKioskBot/1.0)'
+            'User-Agent': 'Mozilla/5.0 (compatible; AstralKioskBot/2.0)'
           }
         });
         clearTimeout(timeoutId);
@@ -127,29 +208,20 @@ export default async function handler(req, res) {
     const feedResults = await Promise.all(feedPromises);
     
     // Organiser feeds separat
-    const byFeed = {
-      'dr-politik': [],
-      'dr-ostjylland': [],
-      'bbc-world': []
-    };
-
-    feedResults.forEach((feedItems, idx) => {
-      const feedId = FEEDS[idx].id;
-      feedItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-      byFeed[feedId] = feedItems;
+    const byFeed = {};
+    FEEDS.forEach((feed, idx) => {
+      const items = feedResults[idx] || [];
+      items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+      byFeed[feed.id] = items;
     });
 
-    const allItems = feedResults.flat();
-
-    // Sorter efter udgivelsesdato (nyeste først)
-    allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-
-    // Vælg de seneste 30 nyheder samlet til spotlight rotation
-    const curated = allItems.slice(0, 30);
+    // Skab en balanceret og varieret spotlight-kø uden BBC-overvægt
+    const curated = createBalancedCuratedList(byFeed, 36);
 
     res.status(200).json({
       success: true,
       timestamp: new Date().toISOString(),
+      sources: FEEDS.map(f => ({ id: f.id, source: f.source, category: f.category })),
       count: curated.length,
       items: curated,
       byFeed
@@ -159,8 +231,9 @@ export default async function handler(req, res) {
     res.status(500).json({
       success: false,
       error: error.message,
+      sources: FEEDS.map(f => ({ id: f.id, source: f.source, category: f.category })),
       items: [],
-      byFeed: { 'dr-politik': [], 'dr-ostjylland': [], 'bbc-world': [] }
+      byFeed: {}
     });
   }
 }

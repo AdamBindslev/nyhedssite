@@ -211,40 +211,18 @@
             </div>
           </div>
 
-          <!-- Avisens 3 parallelle spalter: DR Politik, DR Østjylland, BBC World -->
-          <div class="news-sections-grid">
-            <!-- Spalte 1: DR Politik -->
-            <div class="news-col news-col-dr-politik">
-              <div class="news-col-header">
-                <span class="news-col-title badge-dr-politik">DR POLITIK</span>
-                <span class="news-col-line"></span>
-              </div>
-              <div id="col-dr-politik-list" class="news-col-articles">
-                <!-- 3 overskrifter for DR Politik -->
-              </div>
+          <!-- Kilde-filtrering og status -->
+          <div class="news-filter-wrapper">
+            <div id="news-filter-bar" class="news-filter-bar">
+              <button class="filter-pill is-active" data-feed="all">
+                <span class="filter-dot dot-all"></span> Alle Kilder
+              </button>
             </div>
+          </div>
 
-            <!-- Spalte 2: DR Østjylland -->
-            <div class="news-col news-col-dr-ostjylland">
-              <div class="news-col-header">
-                <span class="news-col-title badge-dr-ostjylland">DR ØSTJYLLAND</span>
-                <span class="news-col-line"></span>
-              </div>
-              <div id="col-dr-ostjylland-list" class="news-col-articles">
-                <!-- 3 overskrifter for DR Østjylland -->
-              </div>
-            </div>
-
-            <!-- Spalte 3: BBC World -->
-            <div class="news-col news-col-bbc-world">
-              <div class="news-col-header">
-                <span class="news-col-title badge-bbc-world">BBC WORLD</span>
-                <span class="news-col-line"></span>
-              </div>
-              <div id="col-bbc-world-list" class="news-col-articles">
-                <!-- 3 overskrifter for BBC World -->
-              </div>
-            </div>
+          <!-- Skalerbar redaktionel overbliksstrøm -->
+          <div id="news-headlines-grid" class="news-headlines-grid">
+            <!-- Dynamisk udfyldt af news.js -->
           </div>
         </article>
 
@@ -262,6 +240,7 @@
               <div class="history-year-tag">
                 <span class="year-prefix">ÅR</span>
                 <span id="history-year" class="year-num">----</span>
+                <span id="history-epoch" class="history-epoch-label">Epoke</span>
               </div>
               <p id="history-text" class="history-narrative">Henter historiske optegnelser og prominente mærkedage...</p>
             </div>
