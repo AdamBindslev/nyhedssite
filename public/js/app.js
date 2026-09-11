@@ -6,7 +6,7 @@ import { initOccult } from './occult.js';
 import { initHistory } from './history.js';
 import { initNews } from './news.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+function initDashboard() {
   // 1. Initialiser realtids-ur
   initClock();
 
@@ -24,7 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Kiosk fuldskærms-genvej (Tast 'F' eller klik på det diskrete stjerne-ikon i hjørnet)
   setupKioskControls();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+  initDashboard();
+}
 
 function setupLocationAndWeather() {
   if ('geolocation' in navigator) {

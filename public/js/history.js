@@ -11,7 +11,7 @@ const FALLBACK_HISTORY = [
     type: 'event',
     typeLabel: 'Historisk Begivenhed',
     year: '1977',
-    text: 'Voyager 1 rumsonden opsendes for at udforske det ydre solsystem og bærer 'The Golden Record' med hilsener fra Jorden.'
+    text: 'Voyager 1 rumsonden opsendes for at udforske det ydre solsystem og bærer "The Golden Record" med hilsener fra Jorden.'
   },
   {
     type: 'birth',
