@@ -108,6 +108,21 @@ function renderWeather(data, locationName) {
     hourlyContainer.innerHTML = hourlyHtml;
   }
 
+  // Generer grafisk temperatur-sparkline
+  if (data.hourly && data.hourly.temperature_2m) {
+    const currentHour = new Date().getHours();
+    const trendTemps = [];
+    for (let i = 0; i <= 4; i++) {
+      const idx = currentHour + (i * 2);
+      if (idx < data.hourly.temperature_2m.length) {
+        trendTemps.push(Math.round(data.hourly.temperature_2m[idx]));
+      }
+    }
+    if (trendTemps.length >= 2) {
+      renderWeatherSparkline(trendTemps);
+    }
+  }
+
   // Solopgang & Solnedgang
   if (daily.sunrise && daily.sunset) {
     const sunriseDate = new Date(daily.sunrise[0]);
@@ -118,4 +133,56 @@ function renderWeather(data, locationName) {
     window.CEL_SOLAR_TIMES = { sunriseDate, sunsetDate };
     window.dispatchEvent(new CustomEvent('solar-times-updated', { detail: { sunriseDate, sunsetDate } }));
   }
+}
+
+function renderWeatherSparkline(temps) {
+  const svgEl = document.getElementById('weather-sparkline-svg');
+  if (!svgEl || !temps || temps.length < 2) return;
+
+  const width = 320;
+  const height = 36;
+  const padX = 24;
+  const padY = 8;
+
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  const range = (max - min) || 2;
+
+  const points = temps.map((t, idx) => {
+    const x = padX + (idx / (temps.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((t - min) / range) * (height - padY * 2);
+    return { x, y, temp: t };
+  });
+
+  // Byg glat kurve
+  let pathD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const pCurrent = points[i];
+    const pNext = points[i + 1];
+    const cpX = (pCurrent.x + pNext.x) / 2;
+    pathD += ` C ${cpX.toFixed(1)} ${pCurrent.y.toFixed(1)}, ${cpX.toFixed(1)} ${pNext.y.toFixed(1)}, ${pNext.x.toFixed(1)} ${pNext.y.toFixed(1)}`;
+  }
+
+  const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${height} L ${points[0].x.toFixed(1)} ${height} Z`;
+
+  const circlesHtml = points.map(p => `
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#ffd166" stroke="#0e131f" stroke-width="1.2" />
+  `).join('');
+
+  svgEl.innerHTML = `
+    <defs>
+      <linearGradient id="tempAreaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffd166" stop-opacity="0.22" />
+        <stop offset="100%" stop-color="#ffd166" stop-opacity="0.0" />
+      </linearGradient>
+      <linearGradient id="tempLineGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#72a1e5" />
+        <stop offset="50%" stop-color="#ffd166" />
+        <stop offset="100%" stop-color="#e69d45" />
+      </linearGradient>
+    </defs>
+    <path d="${areaD}" fill="url(#tempAreaGrad)" />
+    <path d="${pathD}" fill="none" stroke="url(#tempLineGrad)" stroke-width="1.8" stroke-linecap="round" />
+    ${circlesHtml}
+  `;
 }

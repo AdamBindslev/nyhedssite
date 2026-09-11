@@ -46,6 +46,23 @@ function parseRssXml(xmlString, feedMeta) {
     const dateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i) || itemXml.match(/<dc:date[^>]*>([\s\S]*?)<\/dc:date>/i);
     const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i) || itemXml.match(/<link[^>]+href=["']([^"']+)["']/i);
 
+    // Billed-detektering: enclosure, media:content, media:thumbnail eller <img> i beskrivelsen
+    let imageUrl = '';
+    const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*>/i);
+    const mediaContentMatch = itemXml.match(/<media:content[^>]+url=["']([^"']+)["'][^>]*>/i);
+    const mediaThumbMatch = itemXml.match(/<media:thumbnail[^>]+url=["']([^"']+)["'][^>]*>/i);
+    const imgTagMatch = (descMatch ? descMatch[1] : '').match(/<img[^>]+src=["']([^"']+)["']/i);
+
+    if (enclosureMatch && !enclosureMatch[1].endsWith('.mp3')) {
+      imageUrl = enclosureMatch[1];
+    } else if (mediaContentMatch) {
+      imageUrl = mediaContentMatch[1];
+    } else if (mediaThumbMatch) {
+      imageUrl = mediaThumbMatch[1];
+    } else if (imgTagMatch) {
+      imageUrl = imgTagMatch[1];
+    }
+
     const title = cleanText(titleMatch ? titleMatch[1] : '');
     const description = cleanText(descMatch ? descMatch[1] : '');
     const pubDate = dateMatch ? new Date(cleanText(dateMatch[1])).toISOString() : new Date().toISOString();
@@ -60,7 +77,8 @@ function parseRssXml(xmlString, feedMeta) {
         title,
         description,
         pubDate,
-        link
+        link,
+        imageUrl: imageUrl || null
       });
     }
   }
@@ -107,26 +125,42 @@ export default async function handler(req, res) {
     });
 
     const feedResults = await Promise.all(feedPromises);
+    
+    // Organiser feeds separat
+    const byFeed = {
+      'dr-politik': [],
+      'dr-ostjylland': [],
+      'bbc-world': []
+    };
+
+    feedResults.forEach((feedItems, idx) => {
+      const feedId = FEEDS[idx].id;
+      feedItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+      byFeed[feedId] = feedItems;
+    });
+
     const allItems = feedResults.flat();
 
     // Sorter efter udgivelsesdato (nyeste først)
     allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
-    // Vælg de seneste 30 nyheder samlet
+    // Vælg de seneste 30 nyheder samlet til spotlight rotation
     const curated = allItems.slice(0, 30);
 
     res.status(200).json({
       success: true,
       timestamp: new Date().toISOString(),
       count: curated.length,
-      items: curated
+      items: curated,
+      byFeed
     });
   } catch (error) {
     console.error('Generel fejl i news API:', error);
     res.status(500).json({
       success: false,
       error: error.message,
-      items: []
+      items: [],
+      byFeed: { 'dr-politik': [], 'dr-ostjylland': [], 'bbc-world': [] }
     });
   }
 }

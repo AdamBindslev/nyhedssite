@@ -1,49 +1,91 @@
-// js/news.js - Håndterer DR Politik, DR Østjylland og BBC World RSS-feeds med auto-rotation
+// js/news.js - Redaktionel 3-kolonners forside og auto-roterende tophistorie
 import { CONFIG } from './config.js';
 
 let newsItems = [];
+let feedsData = {
+  'dr-politik': [],
+  'dr-ostjylland': [],
+  'bbc-world': []
+};
 let currentIndex = 0;
 let newsCycleTimer = null;
 
-// Fallback nyheder hvis der er et midlertidigt netværkssvigt
+// Kuraterede fallbacks med rige detaljer ved netværksproblemer
 const FALLBACK_NEWS = [
   {
     id: 'dr-1',
     source: 'DR Politik',
-    category: 'Politik',
+    category: 'Christiansborg',
+    feedId: 'dr-politik',
     title: 'Finanslovsforhandlinger fortsætter på Christiansborg med fokus på velfærd og grøn omstilling',
-    description: 'Partierne mødes i Finansministeriet for at drøfte prioriteringerne for det kommende budgetår.',
-    pubDate: new Date(Date.now() - 1800000).toISOString()
+    description: 'Partierne mødes i Finansministeriet for at drøfte prioriteringerne for det kommende budgetår, hvor sundhed og uddannelse ventes at få markante løft.',
+    pubDate: new Date(Date.now() - 1800000).toISOString(),
+    imageUrl: null
   },
   {
     id: 'dr-2',
     source: 'DR Østjylland',
-    category: 'Regionalt',
+    category: 'Klima & Byrum',
+    feedId: 'dr-ostjylland',
     title: 'Aarhus Havn indvier nyt klimasikringsprojekt for at beskytte midtbyen mod stormflod',
-    description: 'Det omfattende sluse- og pumpeanlæg er designet til at håndtere fremtidige ekstreme vandstande i bugten.',
-    pubDate: new Date(Date.now() - 3600000).toISOString()
+    description: 'Det omfattende sluse- og pumpeanlæg er designet til at håndtere fremtidige ekstreme vandstande i bugten og sikre boligerne langs åen.',
+    pubDate: new Date(Date.now() - 3600000).toISOString(),
+    imageUrl: null
   },
   {
     id: 'bbc-1',
     source: 'BBC World',
-    category: 'Global',
+    category: 'Videnskab',
+    feedId: 'bbc-world',
     title: 'Astronomers detect unprecedented cosmic phenomenon in distant galaxy cluster',
-    description: 'New telescope observations reveal extraordinary gravitational wave patterns challenging standard stellar models.',
-    pubDate: new Date(Date.now() - 5400000).toISOString()
+    description: 'New telescope observations reveal extraordinary gravitational wave patterns challenging standard stellar models and our understanding of dark matter.',
+    pubDate: new Date(Date.now() - 5400000).toISOString(),
+    imageUrl: null
+  },
+  {
+    id: 'dr-3',
+    source: 'DR Politik',
+    category: 'Uddannelse',
+    feedId: 'dr-politik',
+    title: 'Nye krav til folkeskolen skal styrke praksisfag og mindske mistrivsel blandt unge',
+    description: 'Regeringen og forligsparterne præsenterer en bred aftale med fokus på mere varieret skoledag.',
+    pubDate: new Date(Date.now() - 7200000).toISOString(),
+    imageUrl: null
+  },
+  {
+    id: 'dr-4',
+    source: 'DR Østjylland',
+    category: 'Infrastruktur',
+    feedId: 'dr-ostjylland',
+    title: 'Letbanen i Aarhus udvider køreplanen og melder om rekordhøje passagertal',
+    description: 'Flere afgange i myldretiden skal lette presset på de mest trafikerede strækninger mod universitetet.',
+    pubDate: new Date(Date.now() - 9000000).toISOString(),
+    imageUrl: null
+  },
+  {
+    id: 'bbc-2',
+    source: 'BBC World',
+    category: 'Global',
+    feedId: 'bbc-world',
+    title: 'Global renewable energy investments reach historic high as solar costs plummet',
+    description: 'International energy monitors report record solar and wind adoption across European and Asian grids.',
+    pubDate: new Date(Date.now() - 10800000).toISOString(),
+    imageUrl: null
   }
 ];
 
 function formatTimeAgo(dateString) {
+  if (!dateString) return 'Lige nu';
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
 
   if (diffMins < 1) return 'Lige nu';
-  if (diffMins < 60) return `${diffMins} min siden`;
+  if (diffMins < 60) return `${diffMins}m siden`;
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} time${diffHours > 1 ? 'r' : ''} siden`;
-  return `${Math.floor(diffHours / 24)} d. siden`;
+  if (diffHours < 24) return `${diffHours}t siden`;
+  return `${Math.floor(diffHours / 24)}d siden`;
 }
 
 export async function fetchNews() {
@@ -54,93 +96,163 @@ export async function fetchNews() {
 
     if (data.items && data.items.length > 0) {
       newsItems = data.items;
+      if (data.byFeed) {
+        feedsData = data.byFeed;
+      } else {
+        // Fallback grupper fra items
+        feedsData = {
+          'dr-politik': data.items.filter(i => i.feedId === 'dr-politik'),
+          'dr-ostjylland': data.items.filter(i => i.feedId === 'dr-ostjylland'),
+          'bbc-world': data.items.filter(i => i.feedId === 'bbc-world')
+        };
+      }
     } else {
-      newsItems = FALLBACK_NEWS;
+      setupFallbackData();
     }
   } catch (err) {
-    console.warn('Kunne ikke hente nyheder fra API, forsøger fallback:', err.message);
+    console.warn('Kunne ikke hente nyheder fra API, bruger fallback data:', err.message);
     if (newsItems.length === 0) {
-      newsItems = FALLBACK_NEWS;
+      setupFallbackData();
     }
   }
 
-  displayCurrentNews();
-  renderUpcomingList();
+  displayHeroNews();
+  renderFeedColumns();
   startNewsCycle();
 }
 
-function displayCurrentNews() {
+function setupFallbackData() {
+  newsItems = FALLBACK_NEWS;
+  feedsData = {
+    'dr-politik': FALLBACK_NEWS.filter(i => i.feedId === 'dr-politik'),
+    'dr-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'dr-ostjylland'),
+    'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world')
+  };
+}
+
+function displayHeroNews() {
   if (newsItems.length === 0) return;
 
   const item = newsItems[currentIndex];
-  const container = document.getElementById('news-spotlight');
+  const heroContainer = document.getElementById('news-hero-container');
   const sourceEl = document.getElementById('news-source-tag');
-  const timeEl = document.getElementById('news-time');
+  const catEl = document.getElementById('news-hero-category');
+  const heroTimeEl = document.getElementById('news-hero-time');
+  const topTimeEl = document.getElementById('news-time');
   const titleEl = document.getElementById('news-title');
   const descEl = document.getElementById('news-desc');
+  const imgEl = document.getElementById('news-hero-img');
+  const fallbackArtEl = document.getElementById('news-hero-fallback');
   const progressEl = document.getElementById('news-ticker-bar');
 
-  if (!container || !item) return;
+  if (!heroContainer || !item) return;
 
-  // Nulstil progress bar animation
+  // Nulstil og start progress bar
   if (progressEl) {
     progressEl.style.transition = 'none';
     progressEl.style.width = '0%';
     setTimeout(() => {
       progressEl.style.transition = `width ${CONFIG.intervals.newsCycle}ms linear`;
       progressEl.style.width = '100%';
-    }, 50);
+    }, 40);
   }
 
-  // Blød fade-out og fade-in overgang
-  container.classList.add('news-fade-out');
+  // Blød fade transition
+  heroContainer.classList.add('news-fade-out');
 
   setTimeout(() => {
+    // Kilde og kategori
     if (sourceEl) {
       sourceEl.textContent = item.source;
       sourceEl.className = `news-badge badge-${item.feedId || 'general'}`;
     }
-    if (timeEl) {
-      timeEl.textContent = formatTimeAgo(item.pubDate);
+    if (catEl) {
+      catEl.textContent = item.category || 'Tophistorie';
     }
-    if (titleEl) {
-      titleEl.textContent = item.title;
-    }
+
+    const timeAgoStr = formatTimeAgo(item.pubDate);
+    if (heroTimeEl) heroTimeEl.textContent = timeAgoStr;
+    if (topTimeEl) topTimeEl.textContent = `Opdateret ${timeAgoStr}`;
+
+    // Tekstindhold
+    if (titleEl) titleEl.textContent = item.title;
     if (descEl) {
       descEl.textContent = item.description || '';
       descEl.style.display = item.description ? 'block' : 'none';
     }
 
-    container.classList.remove('news-fade-out');
-    container.classList.add('news-fade-in');
+    // Billedehåndtering
+    if (imgEl && fallbackArtEl) {
+      if (item.imageUrl) {
+        imgEl.onload = () => {
+          imgEl.style.display = 'block';
+          fallbackArtEl.style.display = 'none';
+        };
+        imgEl.onerror = () => {
+          imgEl.style.display = 'none';
+          fallbackArtEl.style.display = 'flex';
+        };
+        imgEl.src = item.imageUrl;
+      } else {
+        imgEl.style.display = 'none';
+        fallbackArtEl.style.display = 'flex';
+      }
+    }
+
+    heroContainer.classList.remove('news-fade-out');
+    heroContainer.classList.add('news-fade-in');
 
     setTimeout(() => {
-      container.classList.remove('news-fade-in');
+      heroContainer.classList.remove('news-fade-in');
     }, 350);
 
-    renderUpcomingList();
-  }, 250);
+    // Fremhæv aktiv artikel i spalterne
+    highlightActiveInColumns(item.title);
+  }, 220);
 }
 
-function renderUpcomingList() {
-  const upcomingContainer = document.getElementById('news-upcoming-list');
-  if (!upcomingContainer || newsItems.length === 0) return;
+function renderFeedColumns() {
+  renderSingleColumn('col-dr-politik-list', feedsData['dr-politik'] || []);
+  renderSingleColumn('col-dr-ostjylland-list', feedsData['dr-ostjylland'] || []);
+  renderSingleColumn('col-bbc-world-list', feedsData['bbc-world'] || []);
+}
 
-  // Vis de næste 3 nyheder i køen
-  let html = '';
-  for (let i = 1; i <= 3; i++) {
-    const nextIdx = (currentIndex + i) % newsItems.length;
-    const nextItem = newsItems[nextIdx];
-    if (nextItem) {
-      html += `
-        <div class="upcoming-item">
-          <span class="upcoming-source">${nextItem.source}</span>
-          <span class="upcoming-title">${nextItem.title}</span>
-        </div>
-      `;
-    }
+function renderSingleColumn(containerId, items) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const currentHeroTitle = newsItems[currentIndex]?.title;
+  // Vis de 3 nyeste overskrifter i hver sektion
+  const displayItems = items.slice(0, 3);
+
+  if (displayItems.length === 0) {
+    container.innerHTML = '<div class="col-empty">Opdaterer feeds...</div>';
+    return;
   }
-  upcomingContainer.innerHTML = html;
+
+  container.innerHTML = displayItems.map(item => {
+    const isHero = item.title === currentHeroTitle;
+    return `
+      <div class="col-article-item ${isHero ? 'is-active-hero' : ''}">
+        <div class="col-item-header">
+          <span class="col-item-dot"></span>
+          <span class="col-item-time">${formatTimeAgo(item.pubDate)}</span>
+        </div>
+        <div class="col-item-title" title="${item.title}">${item.title}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function highlightActiveInColumns(heroTitle) {
+  document.querySelectorAll('.col-article-item').forEach(el => {
+    const titleEl = el.querySelector('.col-item-title');
+    if (titleEl && titleEl.textContent === heroTitle) {
+      el.classList.add('is-active-hero');
+    } else {
+      el.classList.remove('is-active-hero');
+    }
+  });
 }
 
 function startNewsCycle() {
@@ -148,13 +260,13 @@ function startNewsCycle() {
   newsCycleTimer = setInterval(() => {
     if (newsItems.length > 0) {
       currentIndex = (currentIndex + 1) % newsItems.length;
-      displayCurrentNews();
+      displayHeroNews();
     }
   }, CONFIG.intervals.newsCycle);
 }
 
 export function initNews() {
   fetchNews();
-  // Genhent friske feeds hvert 10. minut
+  // Genhent nye feeds fra nettet hvert 10. minut
   setInterval(fetchNews, CONFIG.intervals.newsFetch);
 }

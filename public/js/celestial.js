@@ -149,9 +149,11 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
     }
 
     // Dagslys fremskridt
-    let progressPercent = 0;
+    let progressRatio = 0;
+    let isDaytime = false;
+
     if (now < sunriseDate) {
-      progressPercent = 0;
+      progressRatio = 0;
       if (sunStatusEl) {
         const msUntil = sunriseDate.getTime() - now.getTime();
         const hrs = Math.floor(msUntil / 3600000);
@@ -159,12 +161,13 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
         sunStatusEl.textContent = `Solopgang om ${hrs}t ${mins}m`;
       }
     } else if (now > sunsetDate) {
-      progressPercent = 100;
+      progressRatio = 1;
       if (sunStatusEl) {
-        sunStatusEl.textContent = 'Solen er gået ned';
+        sunStatusEl.textContent = 'Solen er gået ned for i dag';
       }
     } else {
-      progressPercent = Math.min(100, Math.max(0, ((now.getTime() - sunriseDate.getTime()) / dayLengthMs) * 100));
+      progressRatio = Math.min(1, Math.max(0, (now.getTime() - sunriseDate.getTime()) / dayLengthMs));
+      isDaytime = true;
       if (sunStatusEl) {
         const msLeft = sunsetDate.getTime() - now.getTime();
         const hrs = Math.floor(msLeft / 3600000);
@@ -173,8 +176,38 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
       }
     }
 
-    if (daylightBarEl) {
-      daylightBarEl.style.width = `${progressPercent.toFixed(1)}%`;
+    // Opdater SVG Solbue
+    const orbGroup = document.getElementById('solar-orb-group');
+    const activeArcPath = document.getElementById('solar-arc-active');
+    const trackPath = document.getElementById('solar-arc-track');
+
+    if (orbGroup) {
+      const t = progressRatio;
+      // Bezier kurve: P0=(24,46), P1=(160, 4), P2=(296,46)
+      const p0 = { x: 24, y: 46 };
+      const p1 = { x: 160, y: 4 };
+      const p2 = { x: 296, y: 46 };
+
+      const curX = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+      const curY = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+
+      orbGroup.setAttribute('transform', `translate(${curX.toFixed(1)}, ${curY.toFixed(1)})`);
+
+      // Dæmp haloen hvis det er nat
+      const halo = orbGroup.querySelector('.sun-orb-halo');
+      if (halo) {
+        halo.style.opacity = isDaytime ? '1' : '0.25';
+      }
+    }
+
+    if (activeArcPath && trackPath) {
+      try {
+        const len = trackPath.getTotalLength() || 300;
+        activeArcPath.style.strokeDasharray = `${len}`;
+        activeArcPath.style.strokeDashoffset = `${len * (1 - progressRatio)}`;
+      } catch (e) {
+        // Fallback hvis getTotalLength ikke kan kaldes i et specifikt miljø
+      }
     }
   }
 }
