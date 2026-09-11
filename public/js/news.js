@@ -24,12 +24,12 @@ const FALLBACK_NEWS = [
     imageUrl: null
   },
   {
-    id: 'dr-ost-1',
-    source: 'DR Østjylland',
-    category: 'Klima & Byrum',
-    feedId: 'dr-ostjylland',
-    title: 'Aarhus Havn indvier nyt klimasikringsprojekt for at beskytte midtbyen mod stormflod',
-    description: 'Det omfattende sluse- og pumpeanlæg er designet til at håndtere fremtidige ekstreme vandstande i bugten.',
+    id: 'tv2-ost-1',
+    source: 'TV2 Østjylland',
+    category: 'Østjylland',
+    feedId: 'tv2-ostjylland',
+    title: 'Aarhus og Østjylland ruster sig med nye grønne byrum og klimasikring',
+    description: 'Omfattende anlægsarbejde ved havnen og bugten skal beskytte midtbyen mod fremtidige stormfloder og sikre moderne infrastruktur.',
     pubDate: new Date(Date.now() - 2700000).toISOString(),
     imageUrl: null
   },
@@ -79,7 +79,7 @@ let newsItems = [...FALLBACK_NEWS];
 let feedsData = {
   'dr-seneste': FALLBACK_NEWS.filter(i => i.feedId === 'dr-seneste'),
   'dr-politik': FALLBACK_NEWS.filter(i => i.feedId === 'dr-politik'),
-  'dr-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'dr-ostjylland'),
+  'tv2-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'tv2-ostjylland'),
   'politiken': FALLBACK_NEWS.filter(i => i.feedId === 'politiken'),
   'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world'),
   'france-24': FALLBACK_NEWS.filter(i => i.feedId === 'france-24'),
@@ -89,7 +89,7 @@ let feedsData = {
 let availableSources = [
   { id: 'dr-seneste', source: 'DR Seneste' },
   { id: 'dr-politik', source: 'DR Politik' },
-  { id: 'dr-ostjylland', source: 'DR Østjylland' },
+  { id: 'tv2-ostjylland', source: 'TV2 Østjylland' },
   { id: 'politiken', source: 'Politiken' },
   { id: 'bbc-world', source: 'BBC World' },
   { id: 'france-24', source: 'France 24' },
