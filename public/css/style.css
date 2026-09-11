@@ -536,6 +536,19 @@ html, body {
 .news-meta-right {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+.news-page-badge {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-gold-light);
+  background: rgba(226, 184, 102, 0.1);
+  border: 1px solid rgba(226, 184, 102, 0.22);
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 .news-badge {
   font-size: 0.65rem;
@@ -799,6 +812,11 @@ html, body {
   gap: clamp(5px, 0.7vh, 8px);
   min-height: 0;
   flex: 0 0 auto;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.news-headlines-grid.grid-fading {
+  opacity: 0.2;
+  transform: translateY(3px);
 }
 
 .stream-article-card {

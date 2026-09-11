@@ -171,62 +171,75 @@ function parseRssXml(xmlString, feedMeta) {
 }
 
 /**
- * Fair Interleaving: Fletter artikler på tværs af kilder så ingen enkelt kilde
- * (som BBC med mange artikler) dominerer spotlight-rotationen.
- * Skifter harmonisk mellem danske nyheder og internationale tophistorier.
+ * Recency-First afbalancering:
+ * Sorterer primært efter udgivelsestidspunkt (nyeste først), så dugfriske breaking
+ * nyheder aldrig undertrykkes af timer-gamle historier.
+ * Samtidig sikres kildevariation ved at forhindre, at én enkelt kilde optræder
+ * mere end 2 gange i træk i strømmen.
  */
 function createBalancedCuratedList(byFeed, maxItems = 36) {
-  const danishFeedIds = ['dr-seneste', 'dr-politik', 'altinget', 'politiken', 'tv2-ostjylland'];
-  const globalFeedIds = ['bbc-world', 'france-24', 'dw-world'];
+  // Saml alle artikler fra alle feeds
+  const allArticles = [];
+  for (const feedId in byFeed) {
+    if (Array.isArray(byFeed[feedId])) {
+      allArticles.push(...byFeed[feedId]);
+    }
+  }
 
-  const danishItems = [];
-  const globalItems = [];
+  // Sorter strengt kronologisk efter udgivelsestidspunkt (nyeste først)
+  allArticles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
-  // Round-robin blandt danske feeds
-  const maxDkLen = Math.max(...danishFeedIds.map(id => (byFeed[id] || []).length), 0);
-  for (let i = 0; i < maxDkLen; i++) {
-    for (const id of danishFeedIds) {
-      if (byFeed[id] && byFeed[id][i]) {
-        danishItems.push(byFeed[id][i]);
+  // Fjern eventuelle eksakte duplikater på titel
+  const seenTitles = new Set();
+  const pool = [];
+  for (const item of allArticles) {
+    const normTitle = (item.title || '').trim().toLowerCase();
+    if (normTitle && !seenTitles.has(normTitle)) {
+      seenTitles.add(normTitle);
+      pool.push(item);
+    }
+  }
+
+  const result = [];
+  const sourceCount = {};
+
+  while (pool.length > 0 && result.length < maxItems) {
+    // Tjek kilden for de seneste to valgte artikler for at undgå 3 i træk fra samme kilde
+    const last1 = result[result.length - 1]?.feedId;
+    const last2 = result[result.length - 2]?.feedId;
+
+    let candidateIdx = -1;
+
+    for (let i = 0; i < pool.length; i++) {
+      const feedId = pool[i].feedId;
+
+      // Hvis de sidste 2 artikler var fra samme feed, spring over dette feed i denne runde
+      if (last1 && last2 && last1 === feedId && last2 === feedId) {
+        continue;
       }
+
+      candidateIdx = i;
+      break;
     }
+
+    // Hvis alle resterende er fra samme kilde, tag den næste
+    if (candidateIdx === -1) {
+      candidateIdx = 0;
+    }
+
+    const [picked] = pool.splice(candidateIdx, 1);
+    result.push(picked);
+    sourceCount[picked.feedId] = (sourceCount[picked.feedId] || 0) + 1;
   }
 
-  // Round-robin blandt globale feeds
-  const maxGlobalLen = Math.max(...globalFeedIds.map(id => (byFeed[id] || []).length), 0);
-  for (let i = 0; i < maxGlobalLen; i++) {
-    for (const id of globalFeedIds) {
-      if (byFeed[id] && byFeed[id][i]) {
-        globalItems.push(byFeed[id][i]);
-      }
-    }
-  }
-
-  // Flet 2 danske med 1 international (harmonisk balance)
-  const interleaved = [];
-  let dkIdx = 0;
-  let globalIdx = 0;
-
-  while ((dkIdx < danishItems.length || globalIdx < globalItems.length) && interleaved.length < maxItems) {
-    if (dkIdx < danishItems.length) {
-      interleaved.push(danishItems[dkIdx++]);
-    }
-    if (dkIdx < danishItems.length && interleaved.length < maxItems) {
-      interleaved.push(danishItems[dkIdx++]);
-    }
-    if (globalIdx < globalItems.length && interleaved.length < maxItems) {
-      interleaved.push(globalItems[globalIdx++]);
-    }
-  }
-
-  return interleaved;
+  return result;
 }
 
 export default async function handler(req, res) {
-  // CORS & Cache Headers
+  // CORS & Cache Headers (kort 60s CDN cache så nye feeds når ud hurtigt)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -270,9 +283,12 @@ export default async function handler(req, res) {
       byFeed[feed.id] = items;
     });
 
-    // Tilføj seneste verificerede politiske meningsmåling (Politisk Barometer)
+    // Tilføj seneste verificerede politiske meningsmåling (Politisk Barometer) som supplement/fallback
     if (byFeed['altinget']) {
-      byFeed['altinget'].unshift(LATEST_POLL_ITEM);
+      const hasRecentPoll = Object.values(byFeed).flat().some(item => item.isPoll);
+      if (!hasRecentPoll) {
+        byFeed['altinget'].push(LATEST_POLL_ITEM);
+      }
     }
 
     // Skab en balanceret og varieret spotlight-kø uden BBC-overvægt

@@ -119,8 +119,10 @@ let availableSources = [
   { id: 'dw-world', source: 'Deutsche Welle' }
 ];
 
+const PAGE_SIZE = 6;
 let activeFilter = 'all';
 let currentIndex = 0;
+let currentRenderedPage = -1;
 let newsCycleTimer = null;
 
 function formatTimeAgo(dateString) {
@@ -137,13 +139,52 @@ function formatTimeAgo(dateString) {
   return `${Math.floor(diffHours / 24)}d siden`;
 }
 
+function getActiveArticles() {
+  let list = [];
+  if (activeFilter === 'polls') {
+    list = newsItems.filter(i => i.isPoll || i.category === 'Meningsmåling' || /måling/i.test(i.title));
+    if (list.length === 0) {
+      list = newsItems.filter(i => i.category === 'Politik' || i.feedId === 'altinget' || i.feedId === 'dr-politik');
+    }
+  } else if (activeFilter !== 'all' && feedsData[activeFilter]) {
+    list = feedsData[activeFilter];
+  } else {
+    list = newsItems;
+  }
+
+  // Sorter altid strengt kronologisk efter udgivelsestidspunkt (nyeste først)
+  return [...list].sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+}
+
+function getDisplayArticles() {
+  const active = getActiveArticles();
+  if (active.length === 0) return [];
+  const totalPages = Math.max(1, Math.ceil(active.length / PAGE_SIZE));
+  const targetPage = Math.floor(currentIndex / PAGE_SIZE) % totalPages;
+  const start = targetPage * PAGE_SIZE;
+  return active.slice(start, start + PAGE_SIZE);
+}
+
+function updatePageBadge() {
+  const badge = document.getElementById('news-page-badge');
+  if (!badge) return;
+  const active = getActiveArticles();
+  const totalPages = Math.max(1, Math.ceil(active.length / PAGE_SIZE));
+  const currentPage = Math.min(totalPages, Math.floor(currentIndex / PAGE_SIZE) + 1);
+  badge.textContent = `Side ${currentPage}/${totalPages}`;
+}
+
 export async function fetchNews() {
   try {
-    const response = await fetch(CONFIG.endpoints.news);
+    const bustUrl = `${CONFIG.endpoints.news}?_=${Date.now()}`;
+    const response = await fetch(bustUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
     if (data.items && data.items.length > 0) {
+      const activeBefore = getActiveArticles();
+      const currentHeroTitle = activeBefore[currentIndex]?.title;
+
       newsItems = data.items;
       if (data.byFeed) {
         feedsData = data.byFeed;
@@ -151,8 +192,18 @@ export async function fetchNews() {
       if (data.sources && Array.isArray(data.sources)) {
         availableSources = data.sources;
       }
+
+      // Hvis den aktuelle artikel stadig eksisterer, fasthold positionen så brugeren ikke forstyrres
+      const activeAfter = getActiveArticles();
+      const matchIdx = activeAfter.findIndex(i => i.title === currentHeroTitle);
+      if (matchIdx !== -1) {
+        currentIndex = matchIdx;
+      } else {
+        currentIndex = 0;
+      }
+
       renderFilterBar();
-      renderHeadlinesGrid();
+      renderHeadlinesGrid(true);
       displayHeroNews();
     }
   } catch (err) {
@@ -194,113 +245,88 @@ function renderFilterBar() {
 
 function setFilter(feedId) {
   activeFilter = feedId;
+  currentIndex = 0;
+  currentRenderedPage = -1;
   renderFilterBar();
-  renderHeadlinesGrid();
-
-  if (feedId === 'polls') {
-    const pollArticles = newsItems.filter(i => i.isPoll || i.category === 'Meningsmåling' || /måling/i.test(i.title));
-    if (pollArticles.length > 0) {
-      const idx = newsItems.findIndex(i => i.title === pollArticles[0].title);
-      if (idx !== -1) {
-        currentIndex = idx;
-      } else {
-        newsItems.unshift(pollArticles[0]);
-        currentIndex = 0;
-      }
-    }
-    displayHeroNews();
-    startNewsCycle();
-  } else if (feedId !== 'all' && feedsData[feedId] && feedsData[feedId].length > 0) {
-    const targetItem = feedsData[feedId][0];
-    const idx = newsItems.findIndex(i => i.title === targetItem.title);
-    if (idx !== -1) {
-      currentIndex = idx;
-    } else {
-      newsItems.unshift(targetItem);
-      currentIndex = 0;
-    }
-    displayHeroNews();
-    startNewsCycle();
-  }
+  renderHeadlinesGrid(true);
+  displayHeroNews();
+  startNewsCycle();
 }
 
-function getDisplayArticles() {
-  if (activeFilter === 'polls') {
-    const polls = newsItems.filter(i => i.isPoll || i.category === 'Meningsmåling' || /måling/i.test(i.title));
-    if (polls.length > 0) return polls.slice(0, 6);
-    return newsItems.filter(i => i.category === 'Politik' || i.feedId === 'altinget' || i.feedId === 'dr-politik').slice(0, 6);
-  }
-
-  if (activeFilter !== 'all' && feedsData[activeFilter]) {
-    return feedsData[activeFilter].slice(0, 6);
-  }
-
-  // Når 'Alle' er valgt: Vis 6 friske tophistorier med varierede kilder
-  const seenFeeds = new Set();
-  const balancedSelection = [];
-
-  // Første omgang: 1 tophistorie fra hver kilde
-  for (const item of newsItems) {
-    if (!seenFeeds.has(item.feedId)) {
-      seenFeeds.add(item.feedId);
-      balancedSelection.push(item);
-      if (balancedSelection.length >= 6) break;
-    }
-  }
-
-  // Hvis færre end 6 kilder, suppler fra toppen af newsItems
-  if (balancedSelection.length < 6) {
-    for (const item of newsItems) {
-      if (!balancedSelection.some(b => b.title === item.title)) {
-        balancedSelection.push(item);
-        if (balancedSelection.length >= 6) break;
-      }
-    }
-  }
-
-  return balancedSelection.slice(0, 6);
-}
-
-function renderHeadlinesGrid() {
+function renderHeadlinesGrid(force = false) {
   const container = document.getElementById('news-headlines-grid');
   if (!container) return;
 
-  const currentHeroTitle = newsItems[currentIndex]?.title;
-  const articles = getDisplayArticles();
-
-  if (articles.length === 0) {
+  const active = getActiveArticles();
+  if (active.length === 0) {
     container.innerHTML = '<div class="news-stream-empty">Opdaterer nyhedsstrøm...</div>';
+    updatePageBadge();
     return;
   }
 
-  container.innerHTML = articles.map(item => {
-    const isHero = item.title === currentHeroTitle;
-    const cleanTitle = sanitizeText(item.title);
-    const isPoll = item.isPoll || item.category === 'Meningsmåling' || /måling/i.test(item.title);
-    const badgeClass = isPoll ? 'badge-meningsmaling' : `badge-${item.feedId || 'general'}`;
-    const badgeText = isPoll ? '📊 Måling' : item.source;
-    return `
-      <div class="stream-article-card ${isHero ? 'is-active-hero' : ''}" data-feed="${item.feedId}">
-        <div class="stream-card-meta">
-          <span class="news-badge ${badgeClass}">${badgeText}</span>
-          <span class="stream-card-time">${formatTimeAgo(item.pubDate)}</span>
-        </div>
-        <div class="stream-card-title" title="${cleanTitle}">${cleanTitle}</div>
-      </div>
-    `;
-  }).join('');
+  const totalPages = Math.max(1, Math.ceil(active.length / PAGE_SIZE));
+  const targetPage = Math.floor(currentIndex / PAGE_SIZE) % totalPages;
 
-  container.querySelectorAll('.stream-article-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const titleEl = card.querySelector('.stream-card-title');
-      if (!titleEl) return;
-      promoteToHero(titleEl.textContent);
+  // Hvis vi allerede er på den korrekte side, undgå at genopbygge hele DOM'en (bevarer ro og undgår blink)
+  if (!force && targetPage === currentRenderedPage) {
+    highlightActiveInGrid(active[currentIndex]?.title);
+    updateGridTimes();
+    updatePageBadge();
+    return;
+  }
+
+  currentRenderedPage = targetPage;
+  updatePageBadge();
+
+  // Blød fade animation ved sideskift
+  container.classList.add('grid-fading');
+
+  setTimeout(() => {
+    const currentHeroTitle = active[currentIndex]?.title;
+    const articles = getDisplayArticles();
+
+    container.innerHTML = articles.map(item => {
+      const isHero = item.title === currentHeroTitle;
+      const cleanTitle = sanitizeText(item.title);
+      const isPoll = item.isPoll || item.category === 'Meningsmåling' || /måling/i.test(item.title);
+      const badgeClass = isPoll ? 'badge-meningsmaling' : `badge-${item.feedId || 'general'}`;
+      const badgeText = isPoll ? '📊 Måling' : item.source;
+      return `
+        <div class="stream-article-card ${isHero ? 'is-active-hero' : ''}" data-feed="${item.feedId}">
+          <div class="stream-card-meta">
+            <span class="news-badge ${badgeClass}">${badgeText}</span>
+            <span class="stream-card-time" data-pubdate="${item.pubDate}">${formatTimeAgo(item.pubDate)}</span>
+          </div>
+          <div class="stream-card-title" title="${cleanTitle}">${cleanTitle}</div>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.stream-article-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const titleEl = card.querySelector('.stream-card-title');
+        if (!titleEl) return;
+        promoteToHero(titleEl.textContent);
+      });
     });
+
+    container.classList.remove('grid-fading');
+  }, 100);
+}
+
+function updateGridTimes() {
+  document.querySelectorAll('.stream-card-time').forEach(el => {
+    const pubDate = el.getAttribute('data-pubdate');
+    if (pubDate) {
+      el.textContent = formatTimeAgo(pubDate);
+    }
   });
 }
 
 function promoteToHero(title) {
-  const targetIdx = newsItems.findIndex(i => i.title === title);
+  const active = getActiveArticles();
+  const cleanTarget = sanitizeText(title);
+  const targetIdx = active.findIndex(i => sanitizeText(i.title) === cleanTarget || i.title === title);
   if (targetIdx !== -1) {
     currentIndex = targetIdx;
     displayHeroNews();
@@ -309,9 +335,10 @@ function promoteToHero(title) {
 }
 
 function highlightActiveInGrid(heroTitle) {
+  const cleanHero = sanitizeText(heroTitle);
   document.querySelectorAll('.stream-article-card').forEach(el => {
     const titleEl = el.querySelector('.stream-card-title');
-    if (titleEl && titleEl.textContent === heroTitle) {
+    if (titleEl && (sanitizeText(titleEl.textContent) === cleanHero || titleEl.textContent === heroTitle)) {
       el.classList.add('is-active-hero');
     } else {
       el.classList.remove('is-active-hero');
@@ -330,9 +357,14 @@ function sanitizeText(str) {
 }
 
 function displayHeroNews() {
-  if (newsItems.length === 0) return;
+  const active = getActiveArticles();
+  if (active.length === 0) return;
 
-  const item = newsItems[currentIndex];
+  if (currentIndex >= active.length) {
+    currentIndex = 0;
+  }
+
+  const item = active[currentIndex];
   const heroContainer = document.getElementById('news-hero-container') || document.getElementById('news-spotlight');
   const sourceEl = document.getElementById('news-source-tag');
   const catEl = document.getElementById('news-hero-category');
@@ -356,7 +388,7 @@ function displayHeroNews() {
     }, 40);
   }
 
-  // Blød fade transition
+  // Blød fade transition for tophistorien
   heroContainer.classList.add('news-fade-out');
 
   setTimeout(() => {
@@ -408,15 +440,17 @@ function displayHeroNews() {
       heroContainer.classList.remove('news-fade-in');
     }, 350);
 
-    highlightActiveInGrid(item.title);
+    // Opdater automatisk gitteret synkront hvis vi har skiftet side, eller opdater tider/highlight
+    renderHeadlinesGrid();
   }, 180);
 }
 
 function startNewsCycle() {
   if (newsCycleTimer) clearInterval(newsCycleTimer);
   newsCycleTimer = setInterval(() => {
-    if (newsItems.length > 0) {
-      currentIndex = (currentIndex + 1) % newsItems.length;
+    const active = getActiveArticles();
+    if (active.length > 0) {
+      currentIndex = (currentIndex + 1) % active.length;
       displayHeroNews();
     }
   }, CONFIG.intervals.newsCycle);
@@ -424,7 +458,7 @@ function startNewsCycle() {
 
 export function initNews() {
   renderFilterBar();
-  renderHeadlinesGrid();
+  renderHeadlinesGrid(true);
   displayHeroNews();
   startNewsCycle();
 
