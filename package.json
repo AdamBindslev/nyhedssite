@@ -1,0 +1,22 @@
+{
+  "name": "celestial-kiosk-dashboard",
+  "version": "1.0.0",
+  "description": "Dark Celestial & Editorial Kiosk Dashboard til Chromebook, hosted på Vercel",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "dashboard",
+    "kiosk",
+    "chromebook",
+    "celestial",
+    "occult",
+    "news-ticker",
+    "weather"
+  ],
+  "author": "",
+  "license": "MIT"
+}

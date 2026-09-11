@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ASTRAL • Celestial Kiosk Dashboard</title>
+  
+  <!-- Google Fonts: Cinzel, Playfair Display & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="kiosk-body">
+  <!-- Kosmisk baggrundsdekoration -->
+  <div class="celestial-bg">
+    <div class="starfield"></div>
+    <div class="nebula-glow glow-1"></div>
+    <div class="nebula-glow glow-2"></div>
+  </div>
+
+  <div class="dashboard-viewport">
+    <!-- Top Header -->
+    <header class="top-bar">
+      <div class="header-brand">
+        <span class="astral-symbol">✦</span>
+        <span class="brand-title">ASTRAL OBSIDIAN</span>
+        <span class="brand-subtitle">Døgn & Kosmos</span>
+      </div>
+
+      <div class="header-center">
+        <span id="clock-date" class="header-date">Henter dato...</span>
+        <span class="header-separator">•</span>
+        <span id="clock-week" class="header-week">Uge --</span>
+      </div>
+
+      <div class="header-controls">
+        <span class="kiosk-status-pill"><span class="status-dot"></span> LIVE KIOSK</span>
+        <button id="btn-fullscreen" class="btn-icon" title="Fuldskærm (F)">⛶</button>
+      </div>
+    </header>
+
+    <!-- Hovedgrid: Scrollfrit Bento Layout -->
+    <main class="bento-container">
+      
+      <!-- VENSTRE FLØJ: Tid, Vejr & Sol/Måne -->
+      <section class="bento-column left-column">
+        
+        <!-- Kort 1: Live Ur & Solbue -->
+        <article class="bento-card card-clock">
+          <div class="card-header-mini">
+            <span class="card-tag">TIDSPUNKT</span>
+            <span id="sun-status" class="card-subtag">Beregner solstatus...</span>
+          </div>
+
+          <div class="clock-display">
+            <span id="clock-hours" class="time-digit">00</span>
+            <span class="time-colon">:</span>
+            <span id="clock-minutes" class="time-digit">00</span>
+            <span id="clock-seconds" class="time-seconds">00</span>
+          </div>
+
+          <!-- Solens bane & dagslysfremskridt -->
+          <div class="daylight-container">
+            <div class="daylight-labels">
+              <span class="sun-point"><span class="sun-icon">🌅</span> Solopgang <strong id="sunrise-time">--:--</strong></span>
+              <span id="daylight-duration" class="daylight-badge">--t --m dagslys</span>
+              <span class="sun-point"><span class="sun-icon">🌇</span> Solnedgang <strong id="sunset-time">--:--</strong></span>
+            </div>
+            <div class="daylight-track">
+              <div id="daylight-progress-bar" class="daylight-fill"></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Kort 2: Vejrudsigt -->
+        <article class="bento-card card-weather">
+          <div class="card-header-mini">
+            <span class="card-tag">VEJRUDSEENDE</span>
+            <span id="weather-location" class="location-label">Aarhus</span>
+          </div>
+
+          <div class="weather-current-row">
+            <div class="weather-left">
+              <div class="temp-wrapper">
+                <span id="weather-temp" class="weather-temp">--°</span>
+                <span id="weather-high-low" class="weather-hl">H: --°  L: --°</span>
+              </div>
+              <div id="weather-condition" class="weather-condition-text">Henter vejrudsigt...</div>
+            </div>
+            <div class="weather-right">
+              <div id="weather-icon" class="weather-main-icon">🌤️</div>
+            </div>
+          </div>
+
+          <!-- Vejrdetaljer & Næste timer -->
+          <div class="weather-metrics">
+            <div class="metric-item">
+              <span class="metric-label">Vind</span>
+              <span id="weather-wind" class="metric-val">-- km/t</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Fugtighed</span>
+              <span id="weather-humidity" class="metric-val">--%</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Nedbør</span>
+              <span id="weather-precip" class="metric-val">--%</span>
+            </div>
+          </div>
+
+          <div id="weather-hourly-list" class="weather-hourly">
+            <!-- Time-for-time mini-udsigt -->
+          </div>
+        </article>
+
+        <!-- Kort 3: Månefase -->
+        <article class="bento-card card-moon">
+          <div class="card-header-mini">
+            <span class="card-tag">LUNAR CYKLUS</span>
+            <span id="moon-age" class="card-subtag">Dag -- i cyklus</span>
+          </div>
+
+          <div class="moon-body">
+            <div id="moon-graphic" class="moon-graphic-slot">
+              <!-- Dynamisk SVG Måne indsættes af celestial.js -->
+            </div>
+            <div class="moon-info">
+              <div id="moon-phase-name" class="moon-phase-title">Henter månefase...</div>
+              <div id="moon-illumination" class="moon-illum-text">--% oplyst</div>
+              <div class="moon-hint">Reflekterende lys mod jorden</div>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- HØJRE FLØJ: Nyhedsstrøm, Historie & Det Okkulte -->
+      <section class="bento-column right-column">
+        
+        <!-- Kort 4: Nyhedsstrøm (DR Politik, DR Østjylland, BBC World) -->
+        <article class="bento-card card-news">
+          <div class="card-header-mini news-header-row">
+            <div class="news-tags">
+              <span class="card-tag">NYHEDSPULS</span>
+              <span id="news-source-tag" class="news-badge">Henter feeds...</span>
+            </div>
+            <span id="news-time" class="news-timestamp">Opdaterer</span>
+          </div>
+
+          <div class="ticker-progress-container">
+            <div id="news-ticker-bar" class="ticker-progress-bar"></div>
+          </div>
+
+          <div id="news-spotlight" class="news-spotlight-box">
+            <h2 id="news-title" class="news-spotlight-title">Henter seneste overskrifter fra DR og BBC...</h2>
+            <p id="news-desc" class="news-spotlight-desc">Forbindelsen oprettes til nyhedsstrømmene.</p>
+          </div>
+
+          <div class="news-upcoming-preview">
+            <div class="upcoming-label">KOMMENDE I KØEN</div>
+            <div id="news-upcoming-list" class="upcoming-items-container">
+              <!-- Næste 3 overskrifter -->
+            </div>
+          </div>
+        </article>
+
+        <!-- Nederste række i højre fløj: Historie & Okkult -->
+        <div class="bento-row-bottom">
+          
+          <!-- Kort 5: Denne Dag i Historien & Mærkedage -->
+          <article class="bento-card card-history">
+            <div class="card-header-mini">
+              <span class="card-tag">TIDENS ARKIV</span>
+              <span id="history-badge" class="history-badge">Denne dag i historien</span>
+            </div>
+
+            <div id="history-content" class="history-body">
+              <div class="history-year-tag">
+                <span class="year-prefix">ÅR</span>
+                <span id="history-year" class="year-num">----</span>
+              </div>
+              <p id="history-text" class="history-narrative">Henter historiske optegnelser og prominente mærkedage...</p>
+            </div>
+          </article>
+
+          <!-- Kort 6: Det Okkulte Spektrum (Planetariske timer & Kosmisk resonans) -->
+          <article class="bento-card card-occult">
+            <div class="card-header-mini">
+              <span class="card-tag">KOSMISK SPEKTRUM</span>
+              <span id="occult-voc-status" class="occult-badge">Aktiv Strøm</span>
+            </div>
+
+            <div class="occult-body">
+              <div class="planetary-hour-row">
+                <div class="occult-symbol-box">
+                  <span id="occult-planet-symbol" class="planet-glyph">☉</span>
+                </div>
+                <div class="occult-hour-info">
+                  <div id="occult-planet-name" class="occult-title">Beregner time...</div>
+                  <div id="occult-planet-quality" class="occult-quality">Vitalitet og lys</div>
+                  <div id="occult-planet-meta" class="occult-meta">Dagens hersker: Solen</div>
+                </div>
+              </div>
+
+              <div class="zodiac-transit-box">
+                <div class="transit-top">
+                  <span id="occult-moon-sign" class="zodiac-label">Månen i Tegn</span>
+                  <span id="occult-moon-element" class="zodiac-element">Element</span>
+                </div>
+                <div id="occult-element-insight" class="element-insight">
+                  Kosmisk resonans og dagens indflydelse beregnes...
+                </div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

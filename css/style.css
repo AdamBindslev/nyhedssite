@@ -1,0 +1,793 @@
+/* css/style.css - Dark Celestial & Editorial Kiosk Dashboard */
+
+:root {
+  /* Farvepalette: Dark Celestial */
+  --bg-space: #07090e;
+  --bg-card: rgba(14, 19, 31, 0.72);
+  --bg-card-hover: rgba(20, 27, 44, 0.85);
+  --border-gold: rgba(226, 184, 102, 0.22);
+  --border-gold-subtle: rgba(226, 184, 102, 0.12);
+  --gold-glow: rgba(226, 184, 102, 0.35);
+  --accent-gold: #e2b866;
+  --accent-gold-light: #fae0a5;
+  --accent-amber: #e69d45;
+  --accent-blue: #72a1e5;
+  --text-main: #f1f4f9;
+  --text-muted: #8e9bb0;
+  --text-dim: #5c687e;
+
+  /* Typografi */
+  --font-display: 'Cinzel', serif;
+  --font-editorial: 'Playfair Display', serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Nulstilling og Kiosk låsning */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-space);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Skjul scrollbarer overalt */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Kosmisk baggrund med stjernetåge-effekt */
+.celestial-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 15%, #10192e 0%, #080b12 65%, #04060a 100%);
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(1.5px 1.5px at 15% 20%, rgba(255, 255, 255, 0.6) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 45% 10%, rgba(226, 184, 102, 0.7) 50%, transparent 100%),
+    radial-gradient(1.8px 1.8px at 80% 25%, rgba(255, 255, 255, 0.7) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 90% 75%, rgba(114, 161, 229, 0.6) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 85%, rgba(255, 255, 255, 0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 65% 55%, rgba(226, 184, 102, 0.5) 50%, transparent 100%),
+    radial-gradient(1.4px 1.4px at 10% 60%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+  background-size: 550px 550px;
+  opacity: 0.75;
+}
+
+.nebula-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  opacity: 0.18;
+}
+.glow-1 {
+  top: -10%;
+  left: 20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #253b6e, transparent);
+}
+.glow-2 {
+  bottom: -15%;
+  right: 15%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, #4a341e, transparent);
+}
+
+/* Dashboard Viewport */
+.dashboard-viewport {
+  position: relative;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(12px, 1.6vh, 22px) clamp(16px, 1.8vw, 28px);
+  gap: clamp(10px, 1.4vh, 18px);
+}
+
+/* Top Bar */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: clamp(36px, 4.8vh, 46px);
+  padding: 0 clamp(8px, 1vw, 16px);
+  border-bottom: 1px solid var(--border-gold-subtle);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.astral-symbol {
+  color: var(--accent-gold);
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+}
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.2vw, 1.25rem);
+  letter-spacing: 0.16em;
+  color: var(--accent-gold-light);
+}
+.brand-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--text-dim);
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: clamp(0.85rem, 1.05vw, 1.05rem);
+  color: var(--text-main);
+  font-weight: 400;
+}
+.header-separator {
+  color: var(--accent-gold);
+  opacity: 0.5;
+}
+.header-week {
+  color: var(--accent-gold);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kiosk-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+  background: rgba(226, 184, 102, 0.08);
+  border: 1px solid rgba(226, 184, 102, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #2ed573;
+  box-shadow: 0 0 6px #2ed573;
+  animation: pulse-live 2s infinite ease-in-out;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border-gold-subtle);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+.btn-icon:hover {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+}
+
+/* Hovedgrid: Bento Container */
+.bento-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 34%) 1fr;
+  gap: clamp(10px, 1.4vh, 18px);
+  min-height: 0; /* Vigtigt: forhindrer overflow i flex-child */
+}
+
+.bento-column {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  min-height: 0;
+}
+
+/* Fælles Bento Kort Styling */
+.bento-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-gold);
+  border-radius: 12px;
+  padding: clamp(12px, 1.5vh, 18px) clamp(14px, 1.4vw, 20px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.bento-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(226, 184, 102, 0.45), transparent);
+}
+
+.card-header-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.card-tag {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent-gold);
+}
+.card-subtag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* KORT 1: LIVE UR */
+.card-clock {
+  flex: 0 0 auto;
+}
+.clock-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  margin: 4px 0 10px;
+}
+.time-digit {
+  font-family: var(--font-body);
+  font-size: clamp(3.2rem, 5.2vw, 4.6rem);
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+}
+.time-colon {
+  font-size: clamp(2.6rem, 4vw, 3.8rem);
+  font-weight: 300;
+  color: var(--accent-gold);
+  margin: 0 4px;
+  opacity: 0.85;
+}
+.time-seconds {
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  font-weight: 400;
+  color: var(--accent-gold);
+  margin-left: 6px;
+}
+
+/* Solbue / Dagslys */
+.daylight-container {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.daylight-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.sun-point strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.daylight-badge {
+  background: rgba(226, 184, 102, 0.1);
+  color: var(--accent-gold);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+.daylight-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.daylight-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #e69d45, #ffd166, #e2b866);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 209, 102, 0.6);
+  transition: width 1s ease-in-out;
+}
+
+/* KORT 2: VEJR */
+.card-weather {
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+.location-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  letter-spacing: 0.04em;
+}
+.weather-current-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+}
+.temp-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.weather-temp {
+  font-size: clamp(2.4rem, 3.6vw, 3.4rem);
+  font-weight: 500;
+  line-height: 1;
+  color: #ffffff;
+}
+.weather-hl {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.weather-condition-text {
+  font-size: clamp(0.85rem, 1vw, 1.05rem);
+  color: var(--accent-gold-light);
+  margin-top: 4px;
+}
+.weather-main-icon {
+  font-size: clamp(2.4rem, 3.6vw, 3.2rem);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+}
+
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-gold-subtle);
+  border-bottom: 1px solid var(--border-gold-subtle);
+}
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.metric-label {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+.metric-val {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 2px;
+}
+
+.weather-hourly {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding-top: 6px;
+}
+.hourly-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.hourly-time {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+.hourly-icon {
+  font-size: 1rem;
+}
+.hourly-temp {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* KORT 3: MÅNEFASE */
+.card-moon {
+  flex: 0 0 auto;
+}
+.moon-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+.moon-graphic-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.moon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.moon-phase-title {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.15vw, 1.15rem);
+  font-weight: 600;
+  color: var(--accent-gold-light);
+}
+.moon-illum-text {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+.moon-hint {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+/* HØJRE FLØJ: NYHEDER & VERDEN */
+.card-news {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.news-header-row {
+  margin-bottom: 4px;
+}
+.news-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.news-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(226, 184, 102, 0.15);
+  color: var(--accent-gold-light);
+  border: 1px solid rgba(226, 184, 102, 0.25);
+}
+.badge-dr-politik {
+  background: rgba(224, 79, 95, 0.15);
+  color: #ff8591;
+  border-color: rgba(224, 79, 95, 0.3);
+}
+.badge-dr-ostjylland {
+  background: rgba(114, 161, 229, 0.15);
+  color: #9ac2ff;
+  border-color: rgba(114, 161, 229, 0.3);
+}
+.badge-bbc-world {
+  background: rgba(226, 184, 102, 0.15);
+  color: #ffd67a;
+  border-color: rgba(226, 184, 102, 0.3);
+}
+.news-timestamp {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.ticker-progress-container {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 6px 0 10px;
+}
+.ticker-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-gold);
+}
+
+.news-spotlight-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.news-fade-out {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.news-fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.news-spotlight-title {
+  font-family: var(--font-editorial);
+  font-size: clamp(1.25rem, 1.85vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.28;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.news-spotlight-desc {
+  font-size: clamp(0.82rem, 0.95vw, 0.98rem);
+  line-height: 1.45;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-upcoming-preview {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-gold-subtle);
+}
+.upcoming-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.upcoming-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upcoming-source {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  min-width: 80px;
+}
+.upcoming-title {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* NEDERSTE RÆKKE: HISTORIE & OKKULT */
+.bento-row-bottom {
+  height: clamp(160px, 25vh, 230px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.4vh, 18px);
+}
+
+/* KORT 5: HISTORIE */
+.card-history {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.history-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.badge-event {
+  background: rgba(114, 161, 229, 0.15);
+  color: #9ac2ff;
+  border: 1px solid rgba(114, 161, 229, 0.25);
+}
+.badge-birth {
+  background: rgba(226, 184, 102, 0.15);
+  color: #ffd67a;
+  border: 1px solid rgba(226, 184, 102, 0.25);
+}
+
+.history-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 4px 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.history-body.fade-out {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.history-body.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.history-year-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-gold);
+  border-radius: 6px;
+  padding: 4px 10px;
+  min-width: 60px;
+}
+.year-prefix {
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  color: var(--accent-gold);
+}
+.year-num {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.history-narrative {
+  font-size: clamp(0.78rem, 0.92vw, 0.92rem);
+  line-height: 1.4;
+  color: var(--text-main);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* KORT 6: DET OKKULTE */
+.card-occult {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.occult-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.badge-voc-clear {
+  background: rgba(46, 213, 115, 0.12);
+  color: #7bed9f;
+  border: 1px solid rgba(46, 213, 115, 0.25);
+}
+.badge-voc-active {
+  background: rgba(255, 171, 0, 0.15);
+  color: #ffd166;
+  border: 1px solid rgba(255, 171, 0, 0.3);
+}
+
+.occult-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+.planetary-hour-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.occult-symbol-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(226, 184, 102, 0.1);
+  border: 1px solid var(--border-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.planet-glyph {
+  font-size: 1.6rem;
+  color: var(--accent-gold-light);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+}
+.occult-hour-info {
+  display: flex;
+  flex-direction: column;
+}
+.occult-title {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1vw, 1.05rem);
+  font-weight: 700;
+  color: var(--accent-gold-light);
+}
+.occult-quality {
+  font-size: 0.74rem;
+  color: var(--text-main);
+}
+.occult-meta {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+.zodiac-transit-box {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--accent-gold);
+}
+.transit-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.zodiac-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.zodiac-element {
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+}
+.element-insight {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.35;
+}
