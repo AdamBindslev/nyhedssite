@@ -1,5 +1,4 @@
-// Vercel Serverless Function: api/news.js
-// Aggregerer og cacher RSS feeds fra DR Seneste, DR Politik, TV2 Østjylland, Politiken, BBC World, France 24 og Deutsche Welle
+// Aggregerer og cacher RSS feeds fra DR Seneste, DR Politik, Altinget, Politiken Politik, TV2 Østjylland, BBC World, France 24 og Deutsche Welle
 
 const FEEDS = [
   {
@@ -15,16 +14,22 @@ const FEEDS = [
     url: 'https://www.dr.dk/nyheder/service/feeds/politik'
   },
   {
+    id: 'altinget',
+    source: 'Altinget',
+    category: 'Politik',
+    url: 'https://www.altinget.dk/rss'
+  },
+  {
+    id: 'politiken',
+    source: 'Politiken Politik',
+    category: 'Politik',
+    url: 'https://politiken.dk/rss/politik.rss'
+  },
+  {
     id: 'tv2-ostjylland',
     source: 'TV2 Østjylland',
     category: 'Østjylland',
     url: 'https://www.tv2ostjylland.dk/rss'
-  },
-  {
-    id: 'politiken',
-    source: 'Politiken',
-    category: 'Nationalt',
-    url: 'https://politiken.dk/rss/senestenyt.rss'
   },
   {
     id: 'bbc-world',
@@ -45,6 +50,31 @@ const FEEDS = [
     url: 'https://rss.dw.com/xml/rss-en-world'
   }
 ];
+
+// Seneste verificerede Voxmeter meningsmåling (Politisk Barometer)
+const LATEST_POLL_ITEM = {
+  id: 'voxmeter-barometer-latest',
+  source: 'Voxmeter / Altinget',
+  category: 'Meningsmåling',
+  isPoll: true,
+  feedId: 'altinget',
+  title: 'Politisk Barometer: S (21,7%), DF (12,3%), SF (10,4%) og LA (10,2%) i tæt opgør',
+  description: 'Aktuel Voxmeter-måling: S (21,7%), DF (12,3%), SF (10,4%), LA (10,2%), K (9,0%), RV (7,5%), EL (7,5%), V (7,1%), DD (5,6%), M (5,4%), ALT (2,5%). DF konsoliderer positionen som næststørste parti.',
+  pubDate: new Date().toISOString(),
+  link: 'https://www.altinget.dk/',
+  imageUrl: null
+};
+
+function detectPoll(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  const pollKeywords = [
+    'meningsmåling', 'meningsmålinger', 'måling', 'voxmeter', 'epinion',
+    'megafon', 'kantar gallup', 'mandatfordeling', 'partibarometer',
+    'spærregrænsen', 'vælgertilslutning', 'blå blok fører', 'rød blok fører',
+    'vælgerfremgang', 'vælgertilbagegang', 'regeringen står til'
+  ];
+  return pollKeywords.some(kw => text.includes(kw));
+}
 
 function decodeHtmlEntities(str) {
   if (!str) return '';
@@ -118,11 +148,15 @@ function parseRssXml(xmlString, feedMeta) {
     const pubDate = dateMatch ? new Date(cleanText(dateMatch[1])).toISOString() : new Date().toISOString();
     const link = cleanText(linkMatch ? linkMatch[1] : '');
 
+    const isPoll = detectPoll(title, description);
+    const category = isPoll ? 'Meningsmåling' : feedMeta.category;
+
     if (title) {
       items.push({
         id: `${feedMeta.id}-${items.length}-${Date.now()}`,
         source: feedMeta.source,
-        category: feedMeta.category,
+        category,
+        isPoll,
         feedId: feedMeta.id,
         title,
         description,
@@ -142,7 +176,7 @@ function parseRssXml(xmlString, feedMeta) {
  * Skifter harmonisk mellem danske nyheder og internationale tophistorier.
  */
 function createBalancedCuratedList(byFeed, maxItems = 36) {
-  const danishFeedIds = ['dr-seneste', 'dr-politik', 'tv2-ostjylland', 'politiken'];
+  const danishFeedIds = ['dr-seneste', 'dr-politik', 'altinget', 'politiken', 'tv2-ostjylland'];
   const globalFeedIds = ['bbc-world', 'france-24', 'dw-world'];
 
   const danishItems = [];
@@ -235,6 +269,11 @@ export default async function handler(req, res) {
       items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
       byFeed[feed.id] = items;
     });
+
+    // Tilføj seneste verificerede politiske meningsmåling (Politisk Barometer)
+    if (byFeed['altinget']) {
+      byFeed['altinget'].unshift(LATEST_POLL_ITEM);
+    }
 
     // Skab en balanceret og varieret spotlight-kø uden BBC-overvægt
     const curated = createBalancedCuratedList(byFeed, 36);

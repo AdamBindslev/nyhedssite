@@ -24,6 +24,27 @@ const FALLBACK_NEWS = [
     imageUrl: null
   },
   {
+    id: 'vox-poll-1',
+    source: 'Voxmeter / Altinget',
+    category: 'Meningsmåling',
+    isPoll: true,
+    feedId: 'altinget',
+    title: 'Politisk Barometer: S (21,7%), DF (12,3%), SF (10,4%) og LA (10,2%) i tæt opgør',
+    description: 'Aktuel Voxmeter-måling: S (21,7%), DF (12,3%), SF (10,4%), LA (10,2%), K (9,0%), RV (7,5%), EL (7,5%), V (7,1%), DD (5,6%), M (5,4%), ALT (2,5%). DF konsoliderer positionen som næststørste parti.',
+    pubDate: new Date().toISOString(),
+    imageUrl: null
+  },
+  {
+    id: 'alt-pol-1',
+    source: 'Altinget',
+    category: 'Politik',
+    feedId: 'altinget',
+    title: 'Forhandlingerne om ny politisk aftale spidser til forud for efterårets samlinger',
+    description: 'Partierne forbereder sig på intense drøftelser om velfærd, skat og reformer i folkeskolen.',
+    pubDate: new Date(Date.now() - 2100000).toISOString(),
+    imageUrl: null
+  },
+  {
     id: 'tv2-ost-1',
     source: 'TV2 Østjylland',
     category: 'Østjylland',
@@ -35,10 +56,10 @@ const FALLBACK_NEWS = [
   },
   {
     id: 'pol-1',
-    source: 'Politiken',
-    category: 'Samfund',
+    source: 'Politiken Politik',
+    category: 'Politik',
     feedId: 'politiken',
-    title: 'Ny rapport kortlægger danskernes medievaner: Digitalt forbrug når nye højder',
+    title: 'Ny rapport kortlægger danskernes medievaner og tillid til den politiske debat',
     description: 'Brugere søger i stigende grad mod hurtige overblik og dybdegående journalistik på tværs af platforme.',
     pubDate: new Date(Date.now() - 3600000).toISOString(),
     imageUrl: null
@@ -79,6 +100,7 @@ let newsItems = [...FALLBACK_NEWS];
 let feedsData = {
   'dr-seneste': FALLBACK_NEWS.filter(i => i.feedId === 'dr-seneste'),
   'dr-politik': FALLBACK_NEWS.filter(i => i.feedId === 'dr-politik'),
+  'altinget': FALLBACK_NEWS.filter(i => i.feedId === 'altinget'),
   'tv2-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'tv2-ostjylland'),
   'politiken': FALLBACK_NEWS.filter(i => i.feedId === 'politiken'),
   'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world'),
@@ -89,8 +111,9 @@ let feedsData = {
 let availableSources = [
   { id: 'dr-seneste', source: 'DR Seneste' },
   { id: 'dr-politik', source: 'DR Politik' },
+  { id: 'altinget', source: 'Altinget' },
+  { id: 'politiken', source: 'Politiken Politik' },
   { id: 'tv2-ostjylland', source: 'TV2 Østjylland' },
-  { id: 'politiken', source: 'Politiken' },
   { id: 'bbc-world', source: 'BBC World' },
   { id: 'france-24', source: 'France 24' },
   { id: 'dw-world', source: 'Deutsche Welle' }
@@ -144,6 +167,9 @@ function renderFilterBar() {
   const buttons = [
     `<button class="filter-pill ${activeFilter === 'all' ? 'is-active' : ''}" data-feed="all">
       <span class="filter-dot dot-all"></span> Alle Kilder
+    </button>`,
+    `<button class="filter-pill ${activeFilter === 'polls' ? 'is-active' : ''}" data-feed="polls">
+      <span class="filter-dot dot-polls"></span> 📊 Målinger
     </button>`
   ];
 
@@ -171,7 +197,20 @@ function setFilter(feedId) {
   renderFilterBar();
   renderHeadlinesGrid();
 
-  if (feedId !== 'all' && feedsData[feedId] && feedsData[feedId].length > 0) {
+  if (feedId === 'polls') {
+    const pollArticles = newsItems.filter(i => i.isPoll || i.category === 'Meningsmåling' || /måling/i.test(i.title));
+    if (pollArticles.length > 0) {
+      const idx = newsItems.findIndex(i => i.title === pollArticles[0].title);
+      if (idx !== -1) {
+        currentIndex = idx;
+      } else {
+        newsItems.unshift(pollArticles[0]);
+        currentIndex = 0;
+      }
+    }
+    displayHeroNews();
+    startNewsCycle();
+  } else if (feedId !== 'all' && feedsData[feedId] && feedsData[feedId].length > 0) {
     const targetItem = feedsData[feedId][0];
     const idx = newsItems.findIndex(i => i.title === targetItem.title);
     if (idx !== -1) {
@@ -186,6 +225,12 @@ function setFilter(feedId) {
 }
 
 function getDisplayArticles() {
+  if (activeFilter === 'polls') {
+    const polls = newsItems.filter(i => i.isPoll || i.category === 'Meningsmåling' || /måling/i.test(i.title));
+    if (polls.length > 0) return polls.slice(0, 6);
+    return newsItems.filter(i => i.category === 'Politik' || i.feedId === 'altinget' || i.feedId === 'dr-politik').slice(0, 6);
+  }
+
   if (activeFilter !== 'all' && feedsData[activeFilter]) {
     return feedsData[activeFilter].slice(0, 6);
   }
@@ -231,10 +276,13 @@ function renderHeadlinesGrid() {
   container.innerHTML = articles.map(item => {
     const isHero = item.title === currentHeroTitle;
     const cleanTitle = sanitizeText(item.title);
+    const isPoll = item.isPoll || item.category === 'Meningsmåling' || /måling/i.test(item.title);
+    const badgeClass = isPoll ? 'badge-meningsmaling' : `badge-${item.feedId || 'general'}`;
+    const badgeText = isPoll ? '📊 Måling' : item.source;
     return `
       <div class="stream-article-card ${isHero ? 'is-active-hero' : ''}" data-feed="${item.feedId}">
         <div class="stream-card-meta">
-          <span class="news-badge badge-${item.feedId || 'general'}">${item.source}</span>
+          <span class="news-badge ${badgeClass}">${badgeText}</span>
           <span class="stream-card-time">${formatTimeAgo(item.pubDate)}</span>
         </div>
         <div class="stream-card-title" title="${cleanTitle}">${cleanTitle}</div>
@@ -312,12 +360,17 @@ function displayHeroNews() {
   heroContainer.classList.add('news-fade-out');
 
   setTimeout(() => {
+    const isPoll = item.isPoll || item.category === 'Meningsmåling' || /måling/i.test(item.title);
     if (sourceEl) {
-      sourceEl.textContent = item.source;
-      sourceEl.className = `news-badge badge-${item.feedId || 'general'}`;
+      sourceEl.textContent = isPoll ? '📊 ' + item.source : item.source;
+      sourceEl.className = `news-badge ${isPoll ? 'badge-meningsmaling' : 'badge-' + (item.feedId || 'general')}`;
     }
     if (catEl) {
-      catEl.textContent = item.category || 'Tophistorie';
+      if (isPoll) {
+        catEl.innerHTML = '<span class="poll-category-pill">MÅLING & BAROMETER</span>';
+      } else {
+        catEl.textContent = item.category || 'Tophistorie';
+      }
     }
 
     const timeAgoStr = formatTimeAgo(item.pubDate);

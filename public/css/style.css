@@ -558,6 +558,16 @@ html, body {
   color: #ff8591;
   border-color: rgba(224, 79, 95, 0.3);
 }
+.badge-altinget {
+  background: rgba(235, 69, 95, 0.16);
+  color: #ff758f;
+  border-color: rgba(235, 69, 95, 0.35);
+}
+.badge-meningsmaling {
+  background: rgba(255, 209, 102, 0.18);
+  color: #ffd166;
+  border-color: rgba(255, 209, 102, 0.4);
+}
 .badge-dr-ostjylland {
   background: rgba(114, 161, 229, 0.15);
   color: #9ac2ff;
@@ -766,6 +776,8 @@ html, body {
 .filter-dot.dot-all { background: var(--accent-gold); }
 .filter-dot.dot-dr-seneste { background: #ff6b6b; }
 .filter-dot.dot-dr-politik { background: #ff8591; }
+.filter-dot.dot-altinget { background: #ff758f; }
+.filter-dot.dot-polls { background: #ffd166; }
 .filter-dot.dot-dr-ostjylland { background: #9ac2ff; }
 .filter-dot.dot-tv2-ostjylland { background: #74c0fc; }
 .filter-dot.dot-politiken { background: #f778ba; }
@@ -773,6 +785,12 @@ html, body {
 .filter-dot.dot-the-guardian { background: #56d3c4; }
 .filter-dot.dot-france-24 { background: #56d3c4; }
 .filter-dot.dot-dw-world { background: #64b5f6; }
+
+.poll-category-pill {
+  color: var(--accent-gold);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
 
 /* SKALERBAR REDAKTIONEL OVERBLIKSSTRØM (2-SPALTET RESPONSIVT GRID) */
 .news-headlines-grid {
