@@ -1,5 +1,5 @@
 // Vercel Serverless Function: api/news.js
-// Aggregerer og cacher RSS feeds fra DR Seneste, DR Politik, DR Østjylland, Politiken, BBC World og The Guardian
+// Aggregerer og cacher RSS feeds fra DR Seneste, DR Politik, DR Østjylland, Politiken, BBC World, France 24 og Deutsche Welle
 
 const FEEDS = [
   {
@@ -33,10 +33,16 @@ const FEEDS = [
     url: 'https://feeds.bbci.co.uk/news/world/rss.xml'
   },
   {
-    id: 'the-guardian',
-    source: 'The Guardian',
+    id: 'france-24',
+    source: 'France 24',
     category: 'Global',
-    url: 'https://www.theguardian.com/world/rss'
+    url: 'https://www.france24.com/en/world/rss'
+  },
+  {
+    id: 'dw-world',
+    source: 'Deutsche Welle',
+    category: 'Global',
+    url: 'https://rss.dw.com/xml/rss-en-world'
   }
 ];
 
@@ -137,7 +143,7 @@ function parseRssXml(xmlString, feedMeta) {
  */
 function createBalancedCuratedList(byFeed, maxItems = 36) {
   const danishFeedIds = ['dr-seneste', 'dr-politik', 'dr-ostjylland', 'politiken'];
-  const globalFeedIds = ['bbc-world', 'the-guardian'];
+  const globalFeedIds = ['bbc-world', 'france-24', 'dw-world'];
 
   const danishItems = [];
   const globalItems = [];

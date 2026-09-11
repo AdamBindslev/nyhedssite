@@ -54,12 +54,22 @@ const FALLBACK_NEWS = [
     imageUrl: null
   },
   {
-    id: 'guard-1',
-    source: 'The Guardian',
-    category: 'Miljø',
-    feedId: 'the-guardian',
-    title: 'Global renewable energy investments reach historic high as wind and solar capacity surges',
-    description: 'International monitoring reveals accelerating green transition across European and international power grids.',
+    id: 'f24-1',
+    source: 'France 24',
+    category: 'Global',
+    feedId: 'france-24',
+    title: 'International climate summit addresses global grid modernization and energy security',
+    description: 'Diplomats and energy ministers convene in Paris to establish new multilateral cooperation framework on cross-border energy infrastructure.',
+    pubDate: new Date(Date.now() - 4800000).toISOString(),
+    imageUrl: null
+  },
+  {
+    id: 'dw-1',
+    source: 'Deutsche Welle',
+    category: 'Global',
+    feedId: 'dw-world',
+    title: 'European central banks coordinate strategy on sovereign reserves and geopolitical risk',
+    description: 'Finance ministers and bank governors assess global supply chain stability and reserve diversification at Frankfurt assembly.',
     pubDate: new Date(Date.now() - 5400000).toISOString(),
     imageUrl: null
   }
@@ -72,7 +82,8 @@ let feedsData = {
   'dr-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'dr-ostjylland'),
   'politiken': FALLBACK_NEWS.filter(i => i.feedId === 'politiken'),
   'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world'),
-  'the-guardian': FALLBACK_NEWS.filter(i => i.feedId === 'the-guardian')
+  'france-24': FALLBACK_NEWS.filter(i => i.feedId === 'france-24'),
+  'dw-world': FALLBACK_NEWS.filter(i => i.feedId === 'dw-world')
 };
 
 let availableSources = [
@@ -81,7 +92,8 @@ let availableSources = [
   { id: 'dr-ostjylland', source: 'DR Østjylland' },
   { id: 'politiken', source: 'Politiken' },
   { id: 'bbc-world', source: 'BBC World' },
-  { id: 'the-guardian', source: 'The Guardian' }
+  { id: 'france-24', source: 'France 24' },
+  { id: 'dw-world', source: 'Deutsche Welle' }
 ];
 
 let activeFilter = 'all';

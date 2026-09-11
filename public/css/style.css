@@ -579,6 +579,16 @@ html, body {
   color: #56d3c4;
   border-color: rgba(57, 197, 187, 0.32);
 }
+.badge-france-24 {
+  background: rgba(57, 197, 187, 0.15);
+  color: #56d3c4;
+  border-color: rgba(57, 197, 187, 0.32);
+}
+.badge-dw-world {
+  background: rgba(100, 181, 246, 0.15);
+  color: #64b5f6;
+  border-color: rgba(100, 181, 246, 0.32);
+}
 .news-timestamp {
   font-size: 0.72rem;
   color: var(--text-dim);
@@ -753,6 +763,8 @@ html, body {
 .filter-dot.dot-politiken { background: #f778ba; }
 .filter-dot.dot-bbc-world { background: #ffd67a; }
 .filter-dot.dot-the-guardian { background: #56d3c4; }
+.filter-dot.dot-france-24 { background: #56d3c4; }
+.filter-dot.dot-dw-world { background: #64b5f6; }
 
 /* SKALERBAR REDAKTIONEL OVERBLIKSSTRØM (2-SPALTET RESPONSIVT GRID) */
 .news-headlines-grid {
