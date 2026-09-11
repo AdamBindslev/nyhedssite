@@ -26,7 +26,6 @@ const server = http.createServer(async (req, res) => {
 
   // Håndter Vercel API routes
   if (pathname === '/api/news' || pathname === '/api/news.js') {
-    // Tilføj Express-lignende hjælpefunktioner til standard http res
     res.status = (code) => {
       res.statusCode = code;
       return res;
@@ -39,9 +38,12 @@ const server = http.createServer(async (req, res) => {
     return newsHandler(req, res);
   }
 
-  // Statiske filer
+  // Statiske filer fra public/
   if (pathname === '/') pathname = '/index.html';
-  const filePath = path.join(__dirname, pathname);
+  let filePath = path.join(__dirname, 'public', pathname);
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, pathname);
+  }
   const ext = path.extname(filePath);
 
   fs.readFile(filePath, (err, data) => {
