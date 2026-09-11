@@ -18,7 +18,7 @@ const FEEDS = [
     id: 'bbc-world',
     source: 'BBC World',
     category: 'Udland',
-    url: 'http://feeds.bbci.co.uk/news/world/rss.xml'
+    url: 'https://feeds.bbci.co.uk/news/world/rss.xml'
   }
 ];
 

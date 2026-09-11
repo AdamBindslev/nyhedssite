@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=2.2">
 </head>
 <body class="kiosk-body">
   <!-- Kosmisk baggrundsdekoration -->
@@ -183,7 +183,7 @@
           <div class="news-top-bar">
             <div class="news-tags">
               <span class="card-tag">NYHEDSPULS</span>
-              <span class="editorial-edition-pill">REDAKTIONEL FORSIDE</span>
+              <span class="editorial-edition-pill">LIVE NYHEDER</span>
             </div>
             <div class="news-meta-right">
               <span id="news-time" class="news-timestamp">Opdaterer</span>
@@ -194,14 +194,10 @@
             <div id="news-ticker-bar" class="ticker-progress-bar"></div>
           </div>
 
-          <!-- Hero Tophistorie med billede og redaktionelt format -->
-          <div id="news-hero-container" class="news-hero-section">
-            <div class="news-hero-image-wrap">
-              <img id="news-hero-img" class="news-hero-img" src="" alt="Nyhedsfoto" style="display: none;">
-              <div id="news-hero-fallback" class="news-hero-fallback">
-                <div class="hero-cosmic-sigil">✦</div>
-                <div class="hero-fallback-label">ASTRAL AKTUALITET</div>
-              </div>
+          <!-- Hero Tophistorie med billede og avisformat -->
+          <div id="news-hero-container" class="news-hero-section news-spotlight-box">
+            <div id="news-hero-image-wrap" class="news-hero-image-wrap" style="display: none;">
+              <img id="news-hero-img" class="news-hero-img" src="" alt="Nyhedsfoto">
               <div class="news-hero-vignette"></div>
             </div>
             <div class="news-hero-content">
@@ -210,8 +206,8 @@
                 <span id="news-hero-category" class="hero-category">Tophistorie</span>
                 <span id="news-hero-time" class="hero-time-ago">Lige nu</span>
               </div>
-              <h2 id="news-title" class="news-spotlight-title">Henter seneste overskrifter fra DR og BBC...</h2>
-              <p id="news-desc" class="news-spotlight-desc">Forbindelsen oprettes til nyhedsstrømmene.</p>
+              <h2 id="news-title" class="news-spotlight-title">Henter seneste overskrifter...</h2>
+              <p id="news-desc" class="news-spotlight-desc"></p>
             </div>
           </div>
 
@@ -319,6 +315,6 @@
     </main>
   </div>
 
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/app.js?v=2.2"></script>
 </body>
 </html>

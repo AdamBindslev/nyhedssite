@@ -583,11 +583,10 @@ html, body {
 
 /* Hero Tophistorie med Billede */
 .news-hero-section {
-  display: grid;
-  grid-template-columns: minmax(130px, 24%) 1fr;
+  display: flex;
   gap: clamp(10px, 1.3vw, 18px);
   align-items: center;
-  padding: clamp(6px, 1vh, 10px);
+  padding: clamp(8px, 1.1vh, 12px);
   background: rgba(8, 12, 20, 0.6);
   border: 1px solid rgba(226, 184, 102, 0.16);
   border-radius: 8px;
@@ -603,16 +602,14 @@ html, body {
 }
 
 .news-hero-image-wrap {
+  flex: 0 0 clamp(120px, 20vw, 175px);
   position: relative;
   aspect-ratio: 16 / 10;
-  max-height: clamp(85px, 12vh, 125px);
+  max-height: clamp(85px, 12vh, 120px);
   border-radius: 6px;
   overflow: hidden;
   background: #0d121c;
   border: 1px solid rgba(226, 184, 102, 0.22);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .news-hero-img {
   width: 100%;
@@ -626,30 +623,9 @@ html, body {
   pointer-events: none;
   background: linear-gradient(180deg, rgba(7, 9, 14, 0.05) 0%, rgba(7, 9, 14, 0.7) 100%);
 }
-.news-hero-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at 50% 40%, #1a253e 0%, #080c14 100%);
-  gap: 3px;
-}
-.hero-cosmic-sigil {
-  font-size: 1.5rem;
-  color: var(--accent-gold);
-  filter: drop-shadow(0 0 6px rgba(226, 184, 102, 0.6));
-}
-.hero-fallback-label {
-  font-family: var(--font-display);
-  font-size: 0.56rem;
-  letter-spacing: 0.16em;
-  color: var(--accent-gold-light);
-  opacity: 0.7;
-}
 
 .news-hero-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -891,19 +867,26 @@ html, body {
   position: relative;
   overflow: hidden;
 }
+.card-occult .card-header-mini,
+.card-occult .occult-body {
+  position: relative;
+  z-index: 2;
+}
 .occult-astrolabe-bg {
   position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 130px;
-  height: 130px;
+  right: -25px;
+  bottom: -25px;
+  width: 140px;
+  height: 140px;
   pointer-events: none;
-  opacity: 0.55;
-  animation: rotate-astrolabe 160s linear infinite;
+  z-index: 1;
+  opacity: 0.35;
+  animation: rotate-astrolabe 180s linear infinite;
 }
 .astrolabe-svg {
   width: 100%;
   height: 100%;
+  display: block;
 }
 @keyframes rotate-astrolabe {
   from { transform: rotate(0deg); }

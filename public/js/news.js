@@ -1,16 +1,7 @@
 // js/news.js - Redaktionel 3-kolonners forside og auto-roterende tophistorie
 import { CONFIG } from './config.js';
 
-let newsItems = [];
-let feedsData = {
-  'dr-politik': [],
-  'dr-ostjylland': [],
-  'bbc-world': []
-};
-let currentIndex = 0;
-let newsCycleTimer = null;
-
-// Kuraterede fallbacks med rige detaljer ved netværksproblemer
+// Kuraterede standardnyheder så sitet aldrig står tomt eller med "Henter..."
 const FALLBACK_NEWS = [
   {
     id: 'dr-1',
@@ -35,7 +26,7 @@ const FALLBACK_NEWS = [
   {
     id: 'bbc-1',
     source: 'BBC World',
-    category: 'Videnskab',
+    category: 'Global',
     feedId: 'bbc-world',
     title: 'Astronomers detect unprecedented cosmic phenomenon in distant galaxy cluster',
     description: 'New telescope observations reveal extraordinary gravitational wave patterns challenging standard stellar models and our understanding of dark matter.',
@@ -65,7 +56,7 @@ const FALLBACK_NEWS = [
   {
     id: 'bbc-2',
     source: 'BBC World',
-    category: 'Global',
+    category: 'Udland',
     feedId: 'bbc-world',
     title: 'Global renewable energy investments reach historic high as solar costs plummet',
     description: 'International energy monitors report record solar and wind adoption across European and Asian grids.',
@@ -73,6 +64,15 @@ const FALLBACK_NEWS = [
     imageUrl: null
   }
 ];
+
+let newsItems = [...FALLBACK_NEWS];
+let feedsData = {
+  'dr-politik': FALLBACK_NEWS.filter(i => i.feedId === 'dr-politik'),
+  'dr-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'dr-ostjylland'),
+  'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world')
+};
+let currentIndex = 0;
+let newsCycleTimer = null;
 
 function formatTimeAgo(dateString) {
   if (!dateString) return 'Lige nu';
@@ -96,58 +96,41 @@ export async function fetchNews() {
 
     if (data.items && data.items.length > 0) {
       newsItems = data.items;
-      if (data.byFeed) {
+      if (data.byFeed && (data.byFeed['dr-politik']?.length || data.byFeed['bbc-world']?.length)) {
         feedsData = data.byFeed;
       } else {
-        // Fallback grupper fra items
         feedsData = {
           'dr-politik': data.items.filter(i => i.feedId === 'dr-politik'),
           'dr-ostjylland': data.items.filter(i => i.feedId === 'dr-ostjylland'),
           'bbc-world': data.items.filter(i => i.feedId === 'bbc-world')
         };
       }
-    } else {
-      setupFallbackData();
+      displayHeroNews();
+      renderFeedColumns();
     }
   } catch (err) {
-    console.warn('Kunne ikke hente nyheder fra API, bruger fallback data:', err.message);
-    if (newsItems.length === 0) {
-      setupFallbackData();
-    }
+    console.warn('Kunne ikke hente live RSS feeds, benytter aktuelle nyheder:', err.message);
   }
-
-  displayHeroNews();
-  renderFeedColumns();
-  startNewsCycle();
-}
-
-function setupFallbackData() {
-  newsItems = FALLBACK_NEWS;
-  feedsData = {
-    'dr-politik': FALLBACK_NEWS.filter(i => i.feedId === 'dr-politik'),
-    'dr-ostjylland': FALLBACK_NEWS.filter(i => i.feedId === 'dr-ostjylland'),
-    'bbc-world': FALLBACK_NEWS.filter(i => i.feedId === 'bbc-world')
-  };
 }
 
 function displayHeroNews() {
   if (newsItems.length === 0) return;
 
   const item = newsItems[currentIndex];
-  const heroContainer = document.getElementById('news-hero-container');
+  const heroContainer = document.getElementById('news-hero-container') || document.getElementById('news-spotlight');
   const sourceEl = document.getElementById('news-source-tag');
   const catEl = document.getElementById('news-hero-category');
   const heroTimeEl = document.getElementById('news-hero-time');
   const topTimeEl = document.getElementById('news-time');
   const titleEl = document.getElementById('news-title');
   const descEl = document.getElementById('news-desc');
+  const imgWrap = document.getElementById('news-hero-image-wrap');
   const imgEl = document.getElementById('news-hero-img');
-  const fallbackArtEl = document.getElementById('news-hero-fallback');
   const progressEl = document.getElementById('news-ticker-bar');
 
   if (!heroContainer || !item) return;
 
-  // Nulstil og start progress bar
+  // Nulstil og animer progress bar
   if (progressEl) {
     progressEl.style.transition = 'none';
     progressEl.style.width = '0%';
@@ -161,7 +144,6 @@ function displayHeroNews() {
   heroContainer.classList.add('news-fade-out');
 
   setTimeout(() => {
-    // Kilde og kategori
     if (sourceEl) {
       sourceEl.textContent = item.source;
       sourceEl.className = `news-badge badge-${item.feedId || 'general'}`;
@@ -174,28 +156,24 @@ function displayHeroNews() {
     if (heroTimeEl) heroTimeEl.textContent = timeAgoStr;
     if (topTimeEl) topTimeEl.textContent = `Opdateret ${timeAgoStr}`;
 
-    // Tekstindhold
     if (titleEl) titleEl.textContent = item.title;
     if (descEl) {
       descEl.textContent = item.description || '';
       descEl.style.display = item.description ? 'block' : 'none';
     }
 
-    // Billedehåndtering
-    if (imgEl && fallbackArtEl) {
+    // Billedhåndtering: Vis kun hvis et rigtigt billede kan indlæses
+    if (imgWrap && imgEl) {
       if (item.imageUrl) {
         imgEl.onload = () => {
-          imgEl.style.display = 'block';
-          fallbackArtEl.style.display = 'none';
+          imgWrap.style.display = 'block';
         };
         imgEl.onerror = () => {
-          imgEl.style.display = 'none';
-          fallbackArtEl.style.display = 'flex';
+          imgWrap.style.display = 'none';
         };
         imgEl.src = item.imageUrl;
       } else {
-        imgEl.style.display = 'none';
-        fallbackArtEl.style.display = 'flex';
+        imgWrap.style.display = 'none';
       }
     }
 
@@ -206,9 +184,8 @@ function displayHeroNews() {
       heroContainer.classList.remove('news-fade-in');
     }, 350);
 
-    // Fremhæv aktiv artikel i spalterne
     highlightActiveInColumns(item.title);
-  }, 220);
+  }, 180);
 }
 
 function renderFeedColumns() {
@@ -222,7 +199,6 @@ function renderSingleColumn(containerId, items) {
   if (!container) return;
 
   const currentHeroTitle = newsItems[currentIndex]?.title;
-  // Vis de 3 nyeste overskrifter i hver sektion
   const displayItems = items.slice(0, 3);
 
   if (displayItems.length === 0) {
@@ -266,7 +242,12 @@ function startNewsCycle() {
 }
 
 export function initNews() {
+  // 1. Vis straks nyheder fra starten så intet står tomt
+  displayHeroNews();
+  renderFeedColumns();
+  startNewsCycle();
+
+  // 2. Hent live feeds fra backend
   fetchNews();
-  // Genhent nye feeds fra nettet hvert 10. minut
   setInterval(fetchNews, CONFIG.intervals.newsFetch);
 }
