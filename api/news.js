@@ -40,11 +40,9 @@ const FEEDS = [
   }
 ];
 
-function cleanText(raw) {
-  if (!raw) return '';
-  return raw
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
-    .replace(/<[^>]+>/g, '')
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return str
     .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
     .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&amp;/g, '&')
@@ -60,9 +58,26 @@ function cleanText(raw) {
     .replace(/&AElig;/g, 'Æ')
     .replace(/&Oslash;/g, 'Ø')
     .replace(/&Aring;/g, 'Å')
-    .replace(/&eacute;/gi, 'é')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/&eacute;/gi, 'é');
+}
+
+function cleanText(raw) {
+  if (!raw) return '';
+  let text = raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+
+  // Afkod entiteter FØRST så f.eks. &lt;p&gt; bliver til <p>
+  text = decodeHtmlEntities(text);
+  // Fjern alle HTML-tags
+  text = text.replace(/<[^>]+>/g, ' ');
+  // Afkod igen i tilfælde af dobbelt-encodede entiteter
+  text = decodeHtmlEntities(text);
+  text = text.replace(/<[^>]+>/g, ' ');
+
+  // Fjern live-blog marketing promo tekst i starten (Guardian mv.)
+  text = text.replace(/^\s*Follow the day[’\x27]s news live[\s\S]*?daily news podcast\s*/i, '');
+  text = text.replace(/Continue reading\.\.\.?\s*$/i, '');
+
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 function parseRssXml(xmlString, feedMeta) {

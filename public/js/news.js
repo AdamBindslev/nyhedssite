@@ -218,13 +218,14 @@ function renderHeadlinesGrid() {
 
   container.innerHTML = articles.map(item => {
     const isHero = item.title === currentHeroTitle;
+    const cleanTitle = sanitizeText(item.title);
     return `
       <div class="stream-article-card ${isHero ? 'is-active-hero' : ''}" data-feed="${item.feedId}">
         <div class="stream-card-meta">
           <span class="news-badge badge-${item.feedId || 'general'}">${item.source}</span>
           <span class="stream-card-time">${formatTimeAgo(item.pubDate)}</span>
         </div>
-        <div class="stream-card-title" title="${item.title}">${item.title}</div>
+        <div class="stream-card-title" title="${cleanTitle}">${cleanTitle}</div>
       </div>
     `;
   }).join('');
@@ -256,6 +257,16 @@ function highlightActiveInGrid(heroTitle) {
       el.classList.remove('is-active-hero');
     }
   });
+}
+
+function sanitizeText(str) {
+  if (!str) return '';
+  return str
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/^\s*Follow the day[’']s news live[\s\S]*?daily news podcast\s*/i, '')
+    .replace(/Continue reading\.\.\.?\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function displayHeroNews() {
@@ -301,10 +312,13 @@ function displayHeroNews() {
     if (heroTimeEl) heroTimeEl.textContent = timeAgoStr;
     if (topTimeEl) topTimeEl.textContent = `Opdateret ${timeAgoStr}`;
 
-    if (titleEl) titleEl.textContent = item.title;
+    const cleanTitle = sanitizeText(item.title);
+    const cleanDesc = sanitizeText(item.description);
+
+    if (titleEl) titleEl.textContent = cleanTitle;
     if (descEl) {
-      descEl.textContent = item.description || '';
-      descEl.style.display = item.description ? 'block' : 'none';
+      descEl.textContent = cleanDesc || '';
+      descEl.style.display = cleanDesc ? 'block' : 'none';
     }
 
     // Billedhåndtering: Vis kun hvis et rigtigt billede kan indlæses
