@@ -41,7 +41,7 @@ const FEEDS = [
     id: 'france-24',
     source: 'France 24',
     category: 'Global',
-    url: 'https://www.france24.com/en/world/rss'
+    url: 'https://www.france24.com/en/rss'
   },
   {
     id: 'dw-world',
@@ -68,10 +68,11 @@ const LATEST_POLL_ITEM = {
 function detectPoll(title, description) {
   const text = `${title} ${description}`.toLowerCase();
   const pollKeywords = [
-    'meningsmåling', 'meningsmålinger', 'måling', 'voxmeter', 'epinion',
-    'megafon', 'kantar gallup', 'mandatfordeling', 'partibarometer',
-    'spærregrænsen', 'vælgertilslutning', 'blå blok fører', 'rød blok fører',
-    'vælgerfremgang', 'vælgertilbagegang', 'regeringen står til'
+    'meningsmåling', 'meningsmålinger', 'politisk måling', 'politiske målinger',
+    'voxmeter', 'epinion', 'megafon', 'kantar gallup', 'mandatfordeling',
+    'partibarometer', 'spærregrænsen', 'vælgertilslutning', 'blå blok fører',
+    'rød blok fører', 'vælgerfremgang', 'vælgertilbagegang', 'regeringen står til',
+    'partierne står til', 'ny måling:', 'måling viser'
   ];
   return pollKeywords.some(kw => text.includes(kw));
 }
@@ -88,13 +89,22 @@ function decodeHtmlEntities(str) {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&hellip;/g, '…')
+    .replace(/&ldquo;/g, '“')
+    .replace(/&rdquo;/g, '”')
+    .replace(/&lsquo;/g, '‘')
+    .replace(/&rsquo;/g, '’')
     .replace(/&aelig;/gi, 'æ')
     .replace(/&oslash;/gi, 'ø')
     .replace(/&aring;/gi, 'å')
     .replace(/&AElig;/g, 'Æ')
     .replace(/&Oslash;/g, 'Ø')
     .replace(/&Aring;/g, 'Å')
-    .replace(/&eacute;/gi, 'é');
+    .replace(/&eacute;/gi, 'é')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&copy;/g, '©');
 }
 
 function cleanText(raw) {
@@ -143,9 +153,21 @@ function parseRssXml(xmlString, feedMeta) {
       imageUrl = imgTagMatch[1];
     }
 
+    if (imageUrl) {
+      imageUrl = decodeHtmlEntities(imageUrl.trim());
+    }
+
     const title = cleanText(titleMatch ? titleMatch[1] : '');
     const description = cleanText(descMatch ? descMatch[1] : '');
-    const pubDate = dateMatch ? new Date(cleanText(dateMatch[1])).toISOString() : new Date().toISOString();
+
+    let pubDate;
+    try {
+      const parsedDate = dateMatch ? new Date(cleanText(dateMatch[1])) : new Date();
+      pubDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+    } catch (e) {
+      pubDate = new Date().toISOString();
+    }
+
     const link = cleanText(linkMatch ? linkMatch[1] : '');
 
     const isPoll = detectPoll(title, description);
@@ -254,6 +276,7 @@ export default async function handler(req, res) {
 
         const response = await fetch(feed.url, {
           signal: controller.signal,
+          redirect: 'follow',
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; AstralKioskBot/2.0)'
           }
@@ -287,7 +310,10 @@ export default async function handler(req, res) {
     if (byFeed['altinget']) {
       const hasRecentPoll = Object.values(byFeed).flat().some(item => item.isPoll);
       if (!hasRecentPoll) {
-        byFeed['altinget'].push(LATEST_POLL_ITEM);
+        byFeed['altinget'].push({
+          ...LATEST_POLL_ITEM,
+          pubDate: new Date().toISOString()
+        });
       }
     }
 

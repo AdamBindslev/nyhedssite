@@ -10,18 +10,18 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
 
 const MIME_TYPES = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'application/javascript',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon'
 };
 
 const server = http.createServer(async (req, res) => {
-  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = parsedUrl.pathname;
 
   // Håndter Vercel API routes
@@ -31,7 +31,7 @@ const server = http.createServer(async (req, res) => {
       return res;
     };
     res.json = (data) => {
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.end(JSON.stringify(data));
       return res;
     };
@@ -40,9 +40,10 @@ const server = http.createServer(async (req, res) => {
 
   // Statiske filer fra public/
   if (pathname === '/') pathname = '/index.html';
-  let filePath = path.join(__dirname, 'public', pathname);
+  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+  let filePath = path.join(__dirname, 'public', safePath);
   if (!fs.existsSync(filePath)) {
-    filePath = path.join(__dirname, pathname);
+    filePath = path.join(__dirname, safePath);
   }
   const ext = path.extname(filePath);
 

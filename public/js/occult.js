@@ -42,10 +42,11 @@ function calculateMoonSign(now = new Date()) {
   // Månens gennemsnitlige daglige bevægelse i ekliptikken er ~13.17635 grader
   const degreesTraveled = daysElapsed * 13.176358;
   const currentDegrees = (refDegrees + degreesTraveled) % 360;
+  const normalizedDeg = ((currentDegrees % 360) + 360) % 360;
 
-  const signIndex = Math.floor(currentDegrees / 30);
-  const degreeInSign = Math.floor(currentDegrees % 30);
-  const sign = ZODIAC_SIGNS[signIndex % 12];
+  const signIndex = Math.floor(normalizedDeg / 30) % 12;
+  const degreeInSign = Math.floor(normalizedDeg % 30);
+  const sign = ZODIAC_SIGNS[signIndex];
 
   // Void of course indtræffer traditionelt i de sidste 3 grader af et tegn før skift
   const isVoidOfCourse = degreeInSign >= 27;
@@ -59,9 +60,6 @@ function calculateMoonSign(now = new Date()) {
 
 // Beregn den aktuelle planetariske time ud fra solopgang og solnedgang
 export function calculatePlanetaryHour(now = new Date(), sunrise = null, sunset = null) {
-  const dayOfWeek = now.getDay();
-  const rulerIndex = DAY_RULERS[dayOfWeek];
-
   // Standard hvis vejret endnu ikke har leveret solopgang
   if (!sunrise || !sunset) {
     const defaultSunrise = new Date(now);
@@ -71,6 +69,13 @@ export function calculatePlanetaryHour(now = new Date(), sunrise = null, sunset 
     sunrise = defaultSunrise;
     sunset = defaultSunset;
   }
+
+  // Den astrologiske dag begynder ved daggry (solopgang).
+  // Timer før solopgang hører klassisk til den foregående dags hersker.
+  const dayOfWeek = now.getDay();
+  const isBeforeSunrise = now < sunrise;
+  const effectiveDayOfWeek = isBeforeSunrise ? (dayOfWeek + 6) % 7 : dayOfWeek;
+  const rulerIndex = DAY_RULERS[effectiveDayOfWeek];
 
   const isDay = now >= sunrise && now < sunset;
   let hourNumber = 1;

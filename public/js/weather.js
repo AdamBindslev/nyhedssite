@@ -29,7 +29,7 @@ const WEATHER_CODES = {
 
 export async function fetchWeather(lat = CONFIG.location.latitude, lon = CONFIG.location.longitude, locationName = CONFIG.location.name) {
   try {
-    const url = `${CONFIG.endpoints.weather}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&timezone=${encodeURIComponent(CONFIG.location.timezone)}&forecast_days=1`;
+    const url = `${CONFIG.endpoints.weather}?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&timezone=${encodeURIComponent(CONFIG.location.timezone)}&forecast_days=2`;
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);

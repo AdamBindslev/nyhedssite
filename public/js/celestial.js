@@ -1,8 +1,12 @@
 // js/celestial.js - Solopgang, solnedgang, dagslys-fremskridt og månefase-beregninger
+import { CONFIG } from './config.js';
 
 // Reference nymåne: 11. januar 2024 kl. 11:57 UTC
 const LUNAR_EPOCH = new Date('2024-01-11T11:57:00Z').getTime();
 const SYNODIC_MONTH = 29.53058867 * 86400000; // Dage i millisekunder
+
+let cachedSunrise = null;
+let cachedSunset = null;
 
 export function calculateMoonPhase(date = new Date()) {
   const diff = date.getTime() - LUNAR_EPOCH;
@@ -62,7 +66,7 @@ export function renderMoonSvg(phase) {
   const isWaxing = phase < 0.5;
   // d-værdi for ellipse kurven
   const k = Math.cos(phase * 2 * Math.PI);
-  const rx = Math.abs(r * k);
+  const rx = Math.max(0.1, Math.abs(r * k));
 
   let litPath = '';
   if (phase < 0.25) {
@@ -77,6 +81,16 @@ export function renderMoonSvg(phase) {
   } else {
     // Aftagende segl
     litPath = `M ${cx} ${cy - r} A ${r} ${r} 0 0 0 ${cx} ${cy + r} A ${rx} ${r} 0 0 0 ${cx} ${cy - r}`;
+  }
+
+  const isFullMoon = phase >= 0.48 && phase <= 0.52;
+  const isNewMoon = phase < 0.03 || phase >= 0.97;
+
+  let moonGlowContent = '';
+  if (isFullMoon) {
+    moonGlowContent = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#moonGlow)" filter="drop-shadow(0 0 8px rgba(245, 220, 140, 0.6))" />`;
+  } else if (!isNewMoon) {
+    moonGlowContent = `<path d="${litPath}" fill="url(#moonGlow)" filter="drop-shadow(0 0 6px rgba(235, 205, 130, 0.4))" />`;
   }
 
   return `
@@ -95,13 +109,15 @@ export function renderMoonSvg(phase) {
       <!-- Mørk base -->
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#darkSide)" stroke="rgba(212, 175, 55, 0.3)" stroke-width="1.2" />
       <!-- Oplyst del -->
-      ${(phase >= 0.03 && phase < 0.97) ? `<path d="${litPath}" fill="url(#moonGlow)" filter="drop-shadow(0 0 6px rgba(235, 205, 130, 0.4))" />` : ''}
-      ${(phase >= 0.48 && phase <= 0.52) ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#moonGlow)" filter="drop-shadow(0 0 8px rgba(245, 220, 140, 0.6))" />` : ''}
+      ${moonGlowContent}
     </svg>
   `;
 }
 
 export function updateCelestialDisplay(sunriseDate, sunsetDate) {
+  if (sunriseDate) cachedSunrise = sunriseDate;
+  if (sunsetDate) cachedSunset = sunsetDate;
+
   const moonInfo = calculateMoonPhase();
 
   const moonIconContainer = document.getElementById('moon-graphic');
@@ -123,11 +139,13 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
   }
 
   // Solopgang & Solnedgang tider & dagslysbue
-  if (sunriseDate && sunsetDate) {
+  const effectiveSunrise = sunriseDate || cachedSunrise;
+  const effectiveSunset = sunsetDate || cachedSunset;
+
+  if (effectiveSunrise && effectiveSunset) {
     const sunriseEl = document.getElementById('sunrise-time');
     const sunsetEl = document.getElementById('sunset-time');
     const daylightDurationEl = document.getElementById('daylight-duration');
-    const daylightBarEl = document.getElementById('daylight-progress-bar');
     const sunStatusEl = document.getElementById('sun-status');
 
     const formatTime = (d) => {
@@ -136,11 +154,11 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
       return `${h}:${m}`;
     };
 
-    if (sunriseEl) sunriseEl.textContent = formatTime(sunriseDate);
-    if (sunsetEl) sunsetEl.textContent = formatTime(sunsetDate);
+    if (sunriseEl) sunriseEl.textContent = formatTime(effectiveSunrise);
+    if (sunsetEl) sunsetEl.textContent = formatTime(effectiveSunset);
 
     const now = new Date();
-    const dayLengthMs = sunsetDate.getTime() - sunriseDate.getTime();
+    const dayLengthMs = effectiveSunset.getTime() - effectiveSunrise.getTime();
     const dayLengthHours = Math.floor(dayLengthMs / 3600000);
     const dayLengthMins = Math.floor((dayLengthMs % 3600000) / 60000);
 
@@ -152,24 +170,24 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
     let progressRatio = 0;
     let isDaytime = false;
 
-    if (now < sunriseDate) {
+    if (now < effectiveSunrise) {
       progressRatio = 0;
       if (sunStatusEl) {
-        const msUntil = sunriseDate.getTime() - now.getTime();
+        const msUntil = effectiveSunrise.getTime() - now.getTime();
         const hrs = Math.floor(msUntil / 3600000);
         const mins = Math.floor((msUntil % 3600000) / 60000);
         sunStatusEl.textContent = `Solopgang om ${hrs}t ${mins}m`;
       }
-    } else if (now > sunsetDate) {
+    } else if (now > effectiveSunset) {
       progressRatio = 1;
       if (sunStatusEl) {
         sunStatusEl.textContent = 'Solen er gået ned for i dag';
       }
     } else {
-      progressRatio = Math.min(1, Math.max(0, (now.getTime() - sunriseDate.getTime()) / dayLengthMs));
+      progressRatio = Math.min(1, Math.max(0, (now.getTime() - effectiveSunrise.getTime()) / dayLengthMs));
       isDaytime = true;
       if (sunStatusEl) {
-        const msLeft = sunsetDate.getTime() - now.getTime();
+        const msLeft = effectiveSunset.getTime() - now.getTime();
         const hrs = Math.floor(msLeft / 3600000);
         const mins = Math.floor((msLeft % 3600000) / 60000);
         sunStatusEl.textContent = `${hrs}t ${mins}m dagslys tilbage`;
@@ -210,4 +228,11 @@ export function updateCelestialDisplay(sunriseDate, sunsetDate) {
       }
     }
   }
+}
+
+export function initCelestial() {
+  updateCelestialDisplay();
+  setInterval(() => {
+    updateCelestialDisplay();
+  }, CONFIG.intervals.celestialRefresh || 60000);
 }

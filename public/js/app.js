@@ -2,6 +2,7 @@
 import { CONFIG } from './config.js';
 import { initClock } from './clock.js';
 import { fetchWeather } from './weather.js';
+import { initCelestial } from './celestial.js';
 import { initOccult } from './occult.js';
 import { initHistory } from './history.js';
 import { initNews } from './news.js';
@@ -10,19 +11,22 @@ function initDashboard() {
   // 1. Initialiser realtids-ur
   initClock();
 
-  // 2. Bestem lokation (Browser geoplacering med Aarhus fallback)
+  // 2. Initialiser celestiale beregninger (månefase & solbue)
+  initCelestial();
+
+  // 3. Bestem lokation (Browser geoplacering med Aarhus fallback)
   setupLocationAndWeather();
 
-  // 3. Initialiser det okkulte modul
+  // 4. Initialiser det okkulte modul
   initOccult();
 
-  // 4. Initialiser historie og mærkedage
+  // 5. Initialiser historie og mærkedage
   initHistory();
 
-  // 5. Initialiser nyhedsfeed-cyklus
+  // 6. Initialiser nyhedsfeed-cyklus
   initNews();
 
-  // 6. Kiosk fuldskærms-genvej (Tast 'F' eller klik på det diskrete stjerne-ikon i hjørnet)
+  // 7. Kiosk fuldskærms-genvej (Tast 'F' eller klik på det diskrete stjerne-ikon i hjørnet)
   setupKioskControls();
 }
 
@@ -32,29 +36,34 @@ if (document.readyState === 'loading') {
   initDashboard();
 }
 
+let activeLat = CONFIG.location.latitude;
+let activeLon = CONFIG.location.longitude;
+let activeLocationName = CONFIG.location.name;
+
 function setupLocationAndWeather() {
+  const updateWeather = () => fetchWeather(activeLat, activeLon, activeLocationName);
+
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        fetchWeather(lat, lon, 'Min Lokation');
+        activeLat = pos.coords.latitude;
+        activeLon = pos.coords.longitude;
+        activeLocationName = 'Min Lokation';
+        updateWeather();
       },
       (err) => {
         // Fallback til Aarhus
         console.info('Bruger standard Aarhus koordinater:', err.message);
-        fetchWeather(CONFIG.location.latitude, CONFIG.location.longitude, CONFIG.location.name);
+        updateWeather();
       },
       { timeout: 5000 }
     );
   } else {
-    fetchWeather(CONFIG.location.latitude, CONFIG.location.longitude, CONFIG.location.name);
+    updateWeather();
   }
 
-  // Opdater vejr jævnligt
-  setInterval(() => {
-    fetchWeather(CONFIG.location.latitude, CONFIG.location.longitude, CONFIG.location.name);
-  }, CONFIG.intervals.weatherRefresh);
+  // Opdater vejr jævnligt med den aktive lokation
+  setInterval(updateWeather, CONFIG.intervals.weatherRefresh);
 }
 
 function setupKioskControls() {

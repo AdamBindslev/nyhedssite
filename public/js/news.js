@@ -346,14 +346,47 @@ function highlightActiveInGrid(heroTitle) {
   });
 }
 
-function sanitizeText(str) {
+function decodeHtmlEntities(str) {
   if (!str) return '';
   return str
-    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&hellip;/g, '…')
+    .replace(/&ldquo;/g, '“')
+    .replace(/&rdquo;/g, '”')
+    .replace(/&lsquo;/g, '‘')
+    .replace(/&rsquo;/g, '’')
+    .replace(/&aelig;/gi, 'æ')
+    .replace(/&oslash;/gi, 'ø')
+    .replace(/&aring;/gi, 'å')
+    .replace(/&AElig;/g, 'Æ')
+    .replace(/&Oslash;/g, 'Ø')
+    .replace(/&Aring;/g, 'Å')
+    .replace(/&eacute;/gi, 'é')
+    .replace(/&Eacute;/g, 'É');
+}
+
+function sanitizeText(str) {
+  if (!str) return '';
+  let text = str.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+  text = decodeHtmlEntities(text);
+  text = text.replace(/<[^>]+>/g, ' ');
+  text = decodeHtmlEntities(text);
+  text = text
     .replace(/^\s*Follow the day[’']s news live[\s\S]*?daily news podcast\s*/i, '')
     .replace(/Continue reading\.\.\.?\s*$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
+  return text;
 }
 
 function displayHeroNews() {
@@ -414,8 +447,9 @@ function displayHeroNews() {
 
     if (titleEl) titleEl.textContent = cleanTitle;
     if (descEl) {
-      descEl.textContent = cleanDesc || '';
-      descEl.style.display = cleanDesc ? 'block' : 'none';
+      const isRedundantDesc = !cleanDesc || cleanDesc.toLowerCase() === cleanTitle.toLowerCase();
+      descEl.textContent = isRedundantDesc ? '' : cleanDesc;
+      descEl.style.display = isRedundantDesc ? 'none' : 'block';
     }
 
     // Billedhåndtering: Vis kun hvis et rigtigt billede kan indlæses

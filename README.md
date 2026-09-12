@@ -18,12 +18,15 @@ Et stemningsfuldt, scrollfrit HTML-baseret informationsdashboard i **Dark Celest
    - Angiver belysningsgrad i procent, alder i dags-cyklus og det officielle danske fasenavn (*Fuldmåne*, *Voksende månesegl*, osv.).
 4. **Tidens Arkiv (Wikipedia REST API)**:
    - Auto-roterende kort der blødt cykler mellem *Denne dag i historien* (historiske begivenheder) og *Mærkedage* (kendte personligheder født i dag).
-5. **Nyhedspuls (RSS Feeds)**:
-   - Aggregerer de tre ønskede kilder:
-     - **DR Politik** (`https://www.dr.dk/nyheder/service/feeds/politik`)
-     - **DR Østjylland** (`https://www.dr.dk/nyheder/service/feeds/regionale/oestjylland`)
-     - **BBC World** (`http://feeds.bbci.co.uk/news/world/rss.xml`)
-   - Automatisk roterende spotlight-overskrift med kilde-badge og tidsangivelse samt en kø over de næste 3 kommende historier.
+5. **Nyhedspuls (RSS Feeds & Meningsmålinger)**:
+   - Aggregerer 8 kuraterede kvalitetskilder samt politiske barometer-målinger:
+     - **DR Seneste** & **DR Politik**
+     - **Altinget** & **Politiken Politik**
+     - **TV2 Østjylland**
+     - **BBC World**, **France 24** & **Deutsche Welle**
+     - **Voxmeter / Altinget** (Politiske meningsmålinger)
+   - Automatisk roterende editorial tophistorie med kilde-badge, fotovisning og fremdriftsindikator.
+   - Interaktiv kilde-filtrering og 2-spaltet overbliksstrøm med sideopdeling.
 6. **Det Okkulte Spektrum**:
    - **Planetariske Timer**: Beregner de 12 ulige dagtimer og 12 nattimer efter den ægte hermetiske/chaldæiske orden styret af ugedagens planet og solens bane.
    - **Månens Zodiak**: Aktuelt stjernetegn for Månen og tegnets element (Ild, Jord, Luft, Vand).
